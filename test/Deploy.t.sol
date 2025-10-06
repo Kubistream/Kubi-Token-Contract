@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "forge-std/Test.sol";
-import {TokenScript} from "../script/Token.s.sol";
+import {Test} from "forge-std/Test.sol";
 import {Token} from "../src/Token.sol";
+import {TokenScript} from "../script/Token.s.sol";
+import {console} from "forge-std/console.sol";
 
 contract DeployTest is Test {
     TokenScript script;
@@ -21,6 +22,5 @@ contract DeployTest is Test {
         assertEq(Token(tokenAddress).owner(), deployer);
         console.log("Deployer:", deployer);
         console.log("Owner:", Token(tokenAddress).owner());
-
     }
 }

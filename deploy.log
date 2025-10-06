@@ -1,0 +1,58 @@
+zee@zee:~/kubi/token-factory$ forge script script/DeployFactory.s.sol:DeployFactoryScript --rpc-url base-sepolia --broadcast --verify -vv
+[⠊] Compiling...
+No files changed, compilation skipped
+Script ran successfully.
+
+== Logs ==
+  Factory deployed at: 0x1e17c67f42211cA93a007a00b82638a572a2ac4F
+
+## Setting up 1 EVM.
+
+==========================
+
+Chain 84532
+
+Estimated gas price: 0.510767132 gwei
+
+Estimated total gas used for script: 2779002
+
+Estimated amount required: 0.001419422881362264 ETH
+
+==========================
+
+##### base-sepolia
+✅  [Success] Hash: 0x2bc4f987994e0c59e3574f51f884221ec7b2c1b962bf41f91f2ce7e52e1c3f39
+Contract Address: 0x1e17c67f42211cA93a007a00b82638a572a2ac4F
+Block: 31994938
+Paid: 0.000554521122061842 ETH (2137694 gas * 0.259401543 gwei)
+
+✅ Sequence #1 on base-sepolia | Total Paid: 0.000554521122061842 ETH (2137694 gas * avg 0.259401543 gwei)                                                      
+                                                                                                                                                                
+                                                                                                                                                                
+==========================
+
+ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.
+##
+Start verification for (1) contracts
+Start verifying contract `0x1e17c67f42211cA93a007a00b82638a572a2ac4F` deployed on base-sepolia
+EVM version: prague
+Compiler version: 0.8.30
+
+Submitting verification for [src/Factory.sol:Factory] 0x1e17c67f42211cA93a007a00b82638a572a2ac4F.
+Submitted contract for verification:
+        Response: `OK`
+        GUID: `lzuh1hh2fthw3lilhtjntcdtbt17rbfm8brgjf61qjqxbxjxzm`
+        URL: https://sepolia.basescan.org/address/0x1e17c67f42211ca93a007a00b82638a572a2ac4f
+Contract verification status:
+Response: `NOTOK`
+Details: `Pending in queue`
+Warning: Verification is still pending...; waiting 15 seconds before trying again (7 tries remaining)
+Contract verification status:
+Response: `OK`
+Details: `Pass - Verified`
+Contract successfully verified
+All (1) contracts were verified!
+
+Transactions saved to: /home/zee/kubi/token-factory/broadcast/DeployFactory.s.sol/84532/run-latest.json
+
+Sensitive values saved to: /home/zee/kubi/token-factory/cache/DeployFactory.s.sol/84532/run-latest.json
