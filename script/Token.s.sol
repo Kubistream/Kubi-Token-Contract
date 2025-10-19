@@ -12,7 +12,7 @@ contract TokenScript is Script {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
         vm.startBroadcast(privateKey);
-        token = new Token("WETH Kubi", "WETHkb");
+        token = new Token("CBBTC Kubi", "CBBTCkb");
         console.log("Token deployed at:", address(token));
         vm.stopBroadcast();
 

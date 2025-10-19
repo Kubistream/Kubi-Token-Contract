@@ -10,17 +10,24 @@ contract DeployMultipleTokensScript is Script {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
 
-        string[10] memory names = [
-            "USDC Kubi", "USDT Kubi", "IDRX Kubi", "ASTER Kubi", "MANTA Kubi",
-            "Bitcoin Kubi", "ETH Kubi", "PENGU Kubi", "LUNA Kubi", "BNB Kubi"
+        string[5] memory names = [
+            "ZORA Kubi",
+            "AAVE Kubi",
+            "NOICE Kubi",
+            "EGGS Kubi",
+            "AERO Kubi"
         ];
-        string[10] memory symbols = [
-            "USDCkb", "USDTkb", "IDRXkb", "ASTERkb", "MANTAkb",
-            "Bitcoinkb", "ETHkb", "PENGUkb", "LUNAkb", "BNBkb"
+
+        string[5] memory symbols = [
+            "ZORAkb",
+            "AAVEkb",
+            "NOICEkb",
+            "EGGS kb",
+            "AEROkb"
         ];
 
         // Deploy 10 token
-        for (uint256 i = 0; i < 10; i++) {
+        for (uint256 i = 0; i < 5; i++) {
             Token token = new Token(names[i], symbols[i]);
             console.log("Deployed:", names[i], "at", address(token));
         }
