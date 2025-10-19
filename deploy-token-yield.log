@@ -1,0 +1,251 @@
+ee@zee:~/kubi/token-factory$ forge script script/DeployMultipleTokenYields.s.sol:DeployMultipleTokenYieldsScript --rpc-url base-sepolia --broadcast --verify -vv
+[⠊] Compiling...
+No files changed, compilation skipped
+Script ran successfully.
+
+== Return ==
+deployedTokens: contract TokenYield[] [0x3e8a6aE51C68B0e07C51eDdD345784186A0Db75b, 0xe1ee8466B9bCA145dA5faCD810b3aC36BD1Ed028, 0x48EC3f618441C3a2889c8a4175762b05d286CdA9, 0x28FaF4Ad998A90719307B9af43196fb0e5d16E79, 0xbF192F7E7c24AC5eD05096fe6C3D680eAB379FdF, 0xFBB86422fBEf1D36F2c2b9E99f12D02866A96FC0, 0xf189a5b48541E968E6DfC814AaB44C213C4bd6c0, 0x88AEc303C2A86645768fe69D38419324Eb55B58e, 0x8f0ae7FFCB0ba432058F3F104D30Dbf49f17a43D, 0xE2F7AAcd967EFca369EA4Eef9625FA5a8073B786, 0x908B1cCE17948A16A7054D78642450cF8016B809, 0x3564800eaEe9d40c3291C4432F4b25405e665354, 0xc5bd2C926034560ecAf651D575458420411A91bf, 0x2007Cb1a90E71c18983F1d4091261816E9e9c2dA, 0x04F0aEf9cb921A8Ad848FA8B49aF7fc2E60DbcCb, 0x8c2B7136dDaF6129cE33f58d3E5475a0ed3F7b3C, 0x8e0dCfecDEEBb1da38DD1bbE9418FD7a4bdd4922, 0x89C0fa2BAE88752eC733922daa0c2Ff321bb5279, 0xa6c9dD702B198Da46f9C5b21bBe65a2a31fdEB63, 0x5c8b8caa55Af0d10ACc3ec95A614d26C90BD9b62]
+
+== Logs ==
+  === Deploying for protocol: Morpho
+  Deployed Morpho Staked USDC (moUSDC) at: 0x3e8a6aE51C68B0e07C51eDdD345784186A0Db75b
+    Underlying: 0x1fE9A4E25cAA2a22FC0B61010fDB0DB462FB5b29
+    Vault: 0x3f6b98B139482EF9c9d59E6311fECaF4D7854163
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Morpho Staked USDT (moUSDT) at: 0xe1ee8466B9bCA145dA5faCD810b3aC36BD1Ed028
+    Underlying: 0x5e1E8043381F3A21a1A64f46073daF7E74fEdC1E
+    Vault: 0x3f6b98B139482EF9c9d59E6311fECaF4D7854163
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Morpho Staked IDRX (moIDRX) at: 0x48EC3f618441C3a2889c8a4175762b05d286CdA9
+    Underlying: 0x06C1e044D5BEb614faA6128001F519e6c693a044
+    Vault: 0x3f6b98B139482EF9c9d59E6311fECaF4D7854163
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Morpho Staked BTC (moBTC) at: 0x28FaF4Ad998A90719307B9af43196fb0e5d16E79
+    Underlying: 0x85B8Dc34C7Af35baC8a45CfF53353f39E6F732A2
+    Vault: 0x3f6b98B139482EF9c9d59E6311fECaF4D7854163
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Morpho Staked ETH (moETH) at: 0xbF192F7E7c24AC5eD05096fe6C3D680eAB379FdF
+    Underlying: 0x7392e9E58f202Da3877776c41683AC457DFd4CD7
+    Vault: 0x3f6b98B139482EF9c9d59E6311fECaF4D7854163
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  === Deploying for protocol: Aero
+  Deployed Aero Staked USDC (aeUSDC) at: 0xFBB86422fBEf1D36F2c2b9E99f12D02866A96FC0
+    Underlying: 0x1fE9A4E25cAA2a22FC0B61010fDB0DB462FB5b29
+    Vault: 0xfaD414c9d89B764093D031AC45298d6e443040Fa
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Aero Staked USDT (aeUSDT) at: 0xf189a5b48541E968E6DfC814AaB44C213C4bd6c0
+    Underlying: 0x5e1E8043381F3A21a1A64f46073daF7E74fEdC1E
+    Vault: 0xfaD414c9d89B764093D031AC45298d6e443040Fa
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Aero Staked IDRX (aeIDRX) at: 0x88AEc303C2A86645768fe69D38419324Eb55B58e
+    Underlying: 0x06C1e044D5BEb614faA6128001F519e6c693a044
+    Vault: 0xfaD414c9d89B764093D031AC45298d6e443040Fa
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Aero Staked BTC (aeBTC) at: 0x8f0ae7FFCB0ba432058F3F104D30Dbf49f17a43D
+    Underlying: 0x85B8Dc34C7Af35baC8a45CfF53353f39E6F732A2
+    Vault: 0xfaD414c9d89B764093D031AC45298d6e443040Fa
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Aero Staked ETH (aeETH) at: 0xE2F7AAcd967EFca369EA4Eef9625FA5a8073B786
+    Underlying: 0x7392e9E58f202Da3877776c41683AC457DFd4CD7
+    Vault: 0xfaD414c9d89B764093D031AC45298d6e443040Fa
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  === Deploying for protocol: Aave
+  Deployed Aave Staked USDC (aaUSDC) at: 0x908B1cCE17948A16A7054D78642450cF8016B809
+    Underlying: 0x1fE9A4E25cAA2a22FC0B61010fDB0DB462FB5b29
+    Vault: 0x5f306B7c566BF64D2c199E9451C871855E5b456B
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Aave Staked USDT (aaUSDT) at: 0x3564800eaEe9d40c3291C4432F4b25405e665354
+    Underlying: 0x5e1E8043381F3A21a1A64f46073daF7E74fEdC1E
+    Vault: 0x5f306B7c566BF64D2c199E9451C871855E5b456B
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Aave Staked IDRX (aaIDRX) at: 0xc5bd2C926034560ecAf651D575458420411A91bf
+    Underlying: 0x06C1e044D5BEb614faA6128001F519e6c693a044
+    Vault: 0x5f306B7c566BF64D2c199E9451C871855E5b456B
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Aave Staked BTC (aaBTC) at: 0x2007Cb1a90E71c18983F1d4091261816E9e9c2dA
+    Underlying: 0x85B8Dc34C7Af35baC8a45CfF53353f39E6F732A2
+    Vault: 0x5f306B7c566BF64D2c199E9451C871855E5b456B
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Aave Staked ETH (aaETH) at: 0x04F0aEf9cb921A8Ad848FA8B49aF7fc2E60DbcCb
+    Underlying: 0x7392e9E58f202Da3877776c41683AC457DFd4CD7
+    Vault: 0x5f306B7c566BF64D2c199E9451C871855E5b456B
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  === Deploying for protocol: Compound
+  Deployed Compound Staked USDC (coUSDC) at: 0x8c2B7136dDaF6129cE33f58d3E5475a0ed3F7b3C
+    Underlying: 0x1fE9A4E25cAA2a22FC0B61010fDB0DB462FB5b29
+    Vault: 0x0FbC93fcfbCda63797E0f819195f79AA2E2bA478
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Compound Staked USDT (coUSDT) at: 0x8e0dCfecDEEBb1da38DD1bbE9418FD7a4bdd4922
+    Underlying: 0x5e1E8043381F3A21a1A64f46073daF7E74fEdC1E
+    Vault: 0x0FbC93fcfbCda63797E0f819195f79AA2E2bA478
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Compound Staked IDRX (coIDRX) at: 0x89C0fa2BAE88752eC733922daa0c2Ff321bb5279
+    Underlying: 0x06C1e044D5BEb614faA6128001F519e6c693a044
+    Vault: 0x0FbC93fcfbCda63797E0f819195f79AA2E2bA478
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Compound Staked BTC (coBTC) at: 0xa6c9dD702B198Da46f9C5b21bBe65a2a31fdEB63
+    Underlying: 0x85B8Dc34C7Af35baC8a45CfF53353f39E6F732A2
+    Vault: 0x0FbC93fcfbCda63797E0f819195f79AA2E2bA478
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+  Deployed Compound Staked ETH (coETH) at: 0x5c8b8caa55Af0d10ACc3ec95A614d26C90BD9b62
+    Underlying: 0x7392e9E58f202Da3877776c41683AC457DFd4CD7
+    Vault: 0x0FbC93fcfbCda63797E0f819195f79AA2E2bA478
+    Depositor: 0xe190927bEc8eC88585bcA0c2C2e6D492f7E1304e
+
+## Setting up 1 EVM.
+
+==========================
+
+Chain 84532
+
+Estimated gas price: 0.00100029 gwei
+
+Estimated total gas used for script: 91153320
+
+Estimated amount required: 0.0000911797544628 ETH
+
+==========================
+
+##### base-sepolia
+✅  [Success] Hash: 0x71ac6d8845d7b470ad6b9a9300cb3e274c47e855924e2c49d466363cf26714b0
+Contract Address: 0x28FaF4Ad998A90719307B9af43196fb0e5d16E79
+Block: 32552977
+Paid: 0.000003506393848016 ETH (3505889 gas * 0.001000144 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0xc6590748b538eeaa148aed57ba3999b9eb8f245acc65a87e520bb3900ff977dc
+Contract Address: 0xf189a5b48541E968E6DfC814AaB44C213C4bd6c0
+Block: 32552977
+Paid: 0.000003506393848016 ETH (3505889 gas * 0.001000144 gwei)
+
+                                                                                                                                               
+##### base-sepolia                                                                                                                             
+✅  [Success] Hash: 0x80e5b81254f894ece13cde4f63ddbae6e1cd356f71f2783d43aa9618146a4d68                                                         
+Contract Address: 0xe1ee8466B9bCA145dA5faCD810b3aC36BD1Ed028                                                                                   
+Block: 32552977                                                                                                                                
+Paid: 0.000003506417851472 ETH (3505913 gas * 0.001000144 gwei)                                                                                
+                                                                                                                                               
+
+##### base-sepolia
+✅  [Success] Hash: 0xb6299e2cbc81e86e69f5d3902fb69b0294691cfd15ad55cb1a2b23274fbad4df
+Contract Address: 0xbF192F7E7c24AC5eD05096fe6C3D680eAB379FdF
+Block: 32552977
+Paid: 0.000003506393848016 ETH (3505889 gas * 0.001000144 gwei)
+
+                                                                                                                                               
+##### base-sepolia                                                                                                                             
+✅  [Success] Hash: 0xd92c749910d49ca4940b4b8b57ab6feeac0c104b33e2d5956d78297f2f0481fe                                                         
+Contract Address: 0x48EC3f618441C3a2889c8a4175762b05d286CdA9                                                                                   
+Block: 32552977                                                                                                                                
+Paid: 0.000003506417851472 ETH (3505913 gas * 0.001000144 gwei)                                                                                
+                                                                                                                                               
+
+##### base-sepolia
+✅  [Success] Hash: 0xb063a6aef30fe94d9b39ae392551172f0e2f56e3c32841144e7d6a0833fceb41
+Contract Address: 0x3e8a6aE51C68B0e07C51eDdD345784186A0Db75b
+Block: 32552977
+Paid: 0.000003506417851472 ETH (3505913 gas * 0.001000144 gwei)
+
+                                                                                                                                               
+##### base-sepolia                                                                                                                             
+✅  [Success] Hash: 0xcf1a273bdce77d5794c12f60f69e80698a47d0e2164a7a0ea6a2e6932edb5c6f                                                         
+Contract Address: 0xFBB86422fBEf1D36F2c2b9E99f12D02866A96FC0                                                                                   
+Block: 32552977                                                                                                                                
+Paid: 0.000003506393848016 ETH (3505889 gas * 0.001000144 gwei)                                                                                
+
+
+##### base-sepolia
+✅  [Success] Hash: 0xb0e0346aa4e220931220d105594014713dc41597450b3c2e6387a5eae2bb4ce0
+Contract Address: 0xE2F7AAcd967EFca369EA4Eef9625FA5a8073B786
+Block: 32552978
+Paid: 0.00000350638386802 ETH (3505865 gas * 0.001000148 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0x188e18d90b94970bcca041e04f71232b38138e2a9768f2d932c47b1697cb87a4
+Contract Address: 0x8f0ae7FFCB0ba432058F3F104D30Dbf49f17a43D
+Block: 32552978                                                                                                                                
+Paid: 0.00000350638386802 ETH (3505865 gas * 0.001000148 gwei)
+
+                                                                                                                                               
+##### base-sepolia                                                                                                                             
+✅  [Success] Hash: 0x568ccf66ab44e67560fccc9a1efda185f14673ba73767ed9824cd9a6c889ddda                                                         
+Contract Address: 0x88AEc303C2A86645768fe69D38419324Eb55B58e
+Block: 32552978
+Paid: 0.000003506407871572 ETH (3505889 gas * 0.001000148 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0x44a97745a0f83ca9be4fd4de5182a9af35d85d9db9c2ab5349cc9668207c750c
+Contract Address: 0x2007Cb1a90E71c18983F1d4091261816E9e9c2dA
+Block: 32552978
+Paid: 0.00000350638386802 ETH (3505865 gas * 0.001000148 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0xe91fabd7f5b98c99177c97f92e46919f9682f3b3305a03d43061885db4893695
+Contract Address: 0x04F0aEf9cb921A8Ad848FA8B49aF7fc2E60DbcCb
+Block: 32552978
+Paid: 0.00000350638386802 ETH (3505865 gas * 0.001000148 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0x42834847a219872f415fbf0a19c529431128698da0ee4743e0aba38b3ac3f17d
+Contract Address: 0x908B1cCE17948A16A7054D78642450cF8016B809
+Block: 32552978
+Paid: 0.000003506407871572 ETH (3505889 gas * 0.001000148 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0x1b21275f3c5f0fd633fe4a4fef921610177cee788edab1018e9954fea7a727f0
+Contract Address: 0x8e0dCfecDEEBb1da38DD1bbE9418FD7a4bdd4922
+Block: 32552978
+Paid: 0.000003506455878676 ETH (3505937 gas * 0.001000148 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0xab894f72d16d8f538fdbed5977f9a3b0160e55e37f7fb70deb9f0528a96383e1
+Contract Address: 0x5c8b8caa55Af0d10ACc3ec95A614d26C90BD9b62
+Block: 32552978
+Paid: 0.000003506431875124 ETH (3505913 gas * 0.001000148 gwei)
+
+                                                                                                                                               
+##### base-sepolia                                                                                                                             
+✅  [Success] Hash: 0x855947818401458ad74e6ecd5953f9b86396845725e12adff55c6633ebface5e
+Contract Address: 0xc5bd2C926034560ecAf651D575458420411A91bf
+Block: 32552978
+Paid: 0.000003506407871572 ETH (3505889 gas * 0.001000148 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0xdc3d3fbc5aaa850d1d085a33eea43a9d24d819df1e19f20ac16f716b2c0bb3a4
+Contract Address: 0x89C0fa2BAE88752eC733922daa0c2Ff321bb5279
+Block: 32552978
+Paid: 0.000003506455878676 ETH (3505937 gas * 0.001000148 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0xf1555ff210a9df8c87fb1e12c23596d5d47ab201ce66504a8619fe6cf9930de7
+Contract Address: 0xa6c9dD702B198Da46f9C5b21bBe65a2a31fdEB63
+Block: 32552978
+Paid: 0.000003506431875124 ETH (3505913 gas * 0.001000148 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0x62dae967a8b0944f9e793c58c1dbf45eff79e3d88b03fcbda8c64a2c90829e09
+Contract Address: 0x8c2B7136dDaF6129cE33f58d3E5475a0ed3F7b3C
+Block: 32552978
+Paid: 0.000003506455878676 ETH (3505937 gas * 0.001000148 gwei)
+
+
+##### base-sepolia
+✅  [Success] Hash: 0x49c532e925875e6c042605cb07f001a45211ac725a5ea33e38ae3eec6af6148c
+Contract Address: 0x3564800eaEe9d40c3291C4432F4b25405e665354
+Block: 32552978
+Paid: 0.000003506407871572 ETH (3505889 gas * 0.001000148 gwei)
+
+✅ Sequence #1 on base-sepolia | Total Paid: 0.000070128227291124 ETH (70117948 gas * avg 0.001000146 gwei)                                    
+                                                                                                                                               
+                                                                                                                                               
+==========================

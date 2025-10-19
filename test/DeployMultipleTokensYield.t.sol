@@ -60,6 +60,11 @@ contract DeployMultipleTokenYieldsScriptTest is Test {
         vm.setEnv("AERO_DEFAULT_DEPOSITOR", vm.toString(aeroDepositor));
         vm.setEnv("AAVE_DEFAULT_DEPOSITOR", vm.toString(aaveDepositor));
         vm.setEnv("COMPOUND_DEFAULT_DEPOSITOR", vm.toString(compoundDepositor));
+
+        _setTokenOverrides("MORPHO", morphoUnderlying, morphoDepositor);
+        _setTokenOverrides("AERO", aeroUnderlying, aeroDepositor);
+        _setTokenOverrides("AAVE", aaveUnderlying, aaveDepositor);
+        _setTokenOverrides("COMPOUND", compoundUnderlying, compoundDepositor);
     }
 
     function testRunDeploysConfiguredTokenYields() public {
@@ -135,5 +140,23 @@ contract DeployMultipleTokenYieldsScriptTest is Test {
             bytes32 minterRole = token.MINTER_ROLE();
             assertTrue(token.hasRole(minterRole, deployer), "Deployer should have minter role");
         }
+    }
+
+    function _setTokenOverrides(
+        string memory prefix,
+        MockToken underlying,
+        address depositor
+    ) internal {
+        vm.setEnv(string.concat(prefix, "_USDC_UNDERLYING"), vm.toString(address(underlying)));
+        vm.setEnv(string.concat(prefix, "_USDT_UNDERLYING"), vm.toString(address(underlying)));
+        vm.setEnv(string.concat(prefix, "_IDRX_UNDERLYING"), vm.toString(address(underlying)));
+        vm.setEnv(string.concat(prefix, "_BTC_UNDERLYING"), vm.toString(address(underlying)));
+        vm.setEnv(string.concat(prefix, "_ETH_UNDERLYING"), vm.toString(address(underlying)));
+
+        vm.setEnv(string.concat(prefix, "_USDC_DEPOSITOR"), vm.toString(depositor));
+        vm.setEnv(string.concat(prefix, "_USDT_DEPOSITOR"), vm.toString(depositor));
+        vm.setEnv(string.concat(prefix, "_IDRX_DEPOSITOR"), vm.toString(depositor));
+        vm.setEnv(string.concat(prefix, "_BTC_DEPOSITOR"), vm.toString(depositor));
+        vm.setEnv(string.concat(prefix, "_ETH_DEPOSITOR"), vm.toString(depositor));
     }
 }

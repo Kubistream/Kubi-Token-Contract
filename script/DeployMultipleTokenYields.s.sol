@@ -140,14 +140,8 @@ contract DeployMultipleTokenYieldsScript is Script {
                 string.concat(info.envPrefix, "_UNDERLYING"),
                 protocolUnderlying
             );
-            address vault = _addressWithFallback(
-                string.concat(info.envPrefix, "_VAULT"),
-                protocolVault
-            );
-            address depositor = _addressWithFallback(
-                string.concat(info.envPrefix, "_DEPOSITOR"),
-                protocolDepositor
-            );
+            address vault = protocolVault;
+            address depositor = protocolDepositor;
 
             deployedTokens[deployedIndex] = _deployToken(
                 info,
