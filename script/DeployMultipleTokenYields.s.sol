@@ -2,67 +2,179 @@
 pragma solidity ^0.8.13;
 
 import {Script} from "forge-std/Script.sol";
-import {TokenYield} from "../src/TokenYield.sol";
 import {console} from "forge-std/console.sol";
+import {TokenYield} from "../src/TokenYield.sol";
 
 contract DeployMultipleTokenYieldsScript is Script {
     struct TokenInfo {
         string name;
         string symbol;
+        string envPrefix;
     }
 
     struct Protocol {
         string name;
+        string envPrefix;
         TokenInfo[] tokens;
     }
 
-    // function run() external {
-    //     uint256 privateKey = vm.envUint("PRIVATE_KEY");
-    //     vm.startBroadcast(privateKey);
+    error MissingAddress(string key);
 
-    //     // === Define protocols ===
-    //     Protocol[] memory protocols = new Protocol[](3);
+    function run() external returns (TokenYield[] memory deployedTokens) {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
-    //     // --- AqLend ---
-    //     protocols[0].name = "AqLend";
-    //     protocols[0].tokens = new TokenInfo[](6);
-    //     protocols[0].tokens[0] = TokenInfo("AqLend Staked USDC", "aUSDC");
-    //     protocols[0].tokens[1] = TokenInfo("AqLend Staked USDT", "aUSDT");
-    //     protocols[0].tokens[2] = TokenInfo("AqLend Staked IDRX", "aIDRX");
-    //     protocols[0].tokens[3] = TokenInfo("AqLend Staked BTC", "aBTC");
-    //     protocols[0].tokens[4] = TokenInfo("AqLend Staked ETH", "aETH");
+        // Load protocol/token definitions
+        Protocol[] memory protocols = _buildProtocols();
+        uint256 totalTokens = _countTokens(protocols);
+        deployedTokens = new TokenYield[](totalTokens);
 
-    //     // --- BqLend ---
-    //     protocols[1].name = "BqLend";
-    //     protocols[1].tokens = new TokenInfo[](6);
-    //     protocols[1].tokens[0] = TokenInfo("BqLend Staked USDC", "bUSDC");
-    //     protocols[1].tokens[1] = TokenInfo("BqLend Staked USDT", "bUSDT");
-    //     protocols[1].tokens[2] = TokenInfo("BqLend Staked IDRX", "bIDRX");
-    //     protocols[1].tokens[3] = TokenInfo("BqLend Staked BTC", "bBTC");
-    //     protocols[1].tokens[4] = TokenInfo("BqLend Staked ETH", "bETH");
+        // Defaults (can be overridden per token via env)
+        address defaultUnderlying = vm.envOr("DEFAULT_UNDERLYING_TOKEN", address(0));
+        address defaultVault = vm.envOr("DEFAULT_VAULT_ADDRESS", address(0));
+        address defaultDepositor = vm.envOr("DEFAULT_DEPOSITOR_CONTRACT", address(0));
 
-    //     // --- CqLend ---
-    //     protocols[2].name = "CqLend";
-    //     protocols[2].tokens = new TokenInfo[](6);
-    //     protocols[2].tokens[0] = TokenInfo("CqLend Staked USDC", "cUSDC");
-    //     protocols[2].tokens[1] = TokenInfo("CqLend Staked USDT", "cUSDT");
-    //     protocols[2].tokens[2] = TokenInfo("CqLend Staked IDRX", "cIDRX");
-    //     protocols[2].tokens[3] = TokenInfo("CqLend Staked BTC", "cBTC");
-    //     protocols[2].tokens[4] = TokenInfo("CqLend Staked ETH", "cETH");
+        vm.startBroadcast(privateKey);
 
-    //     // === Deploy all tokens ===
-    //     for (uint256 i = 0; i < protocols.length; i++) {
-    //         console.log("=== Deploying for protocol:", protocols[i].name);
-    //         for (uint256 j = 0; j < protocols[i].tokens.length; j++) {
-    //             TokenInfo memory tokenInfo = protocols[i].tokens[j];
-    //             TokenYield token = new TokenYield(tokenInfo.name, tokenInfo.symbol);
-    //             console.log(
-    //                 string.concat("Deployed ", tokenInfo.name, " (", tokenInfo.symbol, ") at:"),
-    //                 address(token)
-    //             );
-    //         }
-    //     }
+        uint256 deployedIndex = 0;
+        for (uint256 i = 0; i < protocols.length; i++) {
+            deployedIndex = _deployProtocol(
+                protocols[i],
+                defaultUnderlying,
+                defaultVault,
+                defaultDepositor,
+                deployedTokens,
+                deployedIndex
+            );
+        }
 
-    //     vm.stopBroadcast();
-    // }
+        vm.stopBroadcast();
+
+        return deployedTokens;
+    }
+
+    function _countTokens(Protocol[] memory protocols) internal pure returns (uint256 total) {
+        for (uint256 i = 0; i < protocols.length; i++) {
+            total += protocols[i].tokens.length;
+        }
+    }
+
+    function _requireUnderlying(string memory key, address fallbackValue) internal view returns (address value) {
+        value = vm.envOr(key, fallbackValue);
+        if (value == address(0)) {
+            revert MissingAddress(key);
+        }
+    }
+
+    function _addressWithFallback(string memory key, address fallbackValue) internal view returns (address) {
+        return vm.envOr(key, fallbackValue);
+    }
+
+    function _buildProtocols() internal pure returns (Protocol[] memory protocols) {
+        protocols = new Protocol[](4);
+
+        protocols[0].name = "Morpho";
+        protocols[0].envPrefix = "MORPHO";
+        protocols[0].tokens = new TokenInfo[](5);
+        protocols[0].tokens[0] = TokenInfo("Morpho Staked USDC", "moUSDC", "MORPHO_USDC");
+        protocols[0].tokens[1] = TokenInfo("Morpho Staked USDT", "moUSDT", "MORPHO_USDT");
+        protocols[0].tokens[2] = TokenInfo("Morpho Staked IDRX", "moIDRX", "MORPHO_IDRX");
+        protocols[0].tokens[3] = TokenInfo("Morpho Staked BTC", "moBTC", "MORPHO_BTC");
+        protocols[0].tokens[4] = TokenInfo("Morpho Staked ETH", "moETH", "MORPHO_ETH");
+
+        protocols[1].name = "Aero";
+        protocols[1].envPrefix = "AERO";
+        protocols[1].tokens = new TokenInfo[](5);
+        protocols[1].tokens[0] = TokenInfo("Aero Staked USDC", "aeUSDC", "AERO_USDC");
+        protocols[1].tokens[1] = TokenInfo("Aero Staked USDT", "aeUSDT", "AERO_USDT");
+        protocols[1].tokens[2] = TokenInfo("Aero Staked IDRX", "aeIDRX", "AERO_IDRX");
+        protocols[1].tokens[3] = TokenInfo("Aero Staked BTC", "aeBTC", "AERO_BTC");
+        protocols[1].tokens[4] = TokenInfo("Aero Staked ETH", "aeETH", "AERO_ETH");
+
+        protocols[2].name = "Aave";
+        protocols[2].envPrefix = "AAVE";
+        protocols[2].tokens = new TokenInfo[](5);
+        protocols[2].tokens[0] = TokenInfo("Aave Staked USDC", "aaUSDC", "AAVE_USDC");
+        protocols[2].tokens[1] = TokenInfo("Aave Staked USDT", "aaUSDT", "AAVE_USDT");
+        protocols[2].tokens[2] = TokenInfo("Aave Staked IDRX", "aaIDRX", "AAVE_IDRX");
+        protocols[2].tokens[3] = TokenInfo("Aave Staked BTC", "aaBTC", "AAVE_BTC");
+        protocols[2].tokens[4] = TokenInfo("Aave Staked ETH", "aaETH", "AAVE_ETH");
+
+        protocols[3].name = "Compound";
+        protocols[3].envPrefix = "COMPOUND";
+        protocols[3].tokens = new TokenInfo[](5);
+        protocols[3].tokens[0] = TokenInfo("Compound Staked USDC", "coUSDC", "COMPOUND_USDC");
+        protocols[3].tokens[1] = TokenInfo("Compound Staked USDT", "coUSDT", "COMPOUND_USDT");
+        protocols[3].tokens[2] = TokenInfo("Compound Staked IDRX", "coIDRX", "COMPOUND_IDRX");
+        protocols[3].tokens[3] = TokenInfo("Compound Staked BTC", "coBTC", "COMPOUND_BTC");
+        protocols[3].tokens[4] = TokenInfo("Compound Staked ETH", "coETH", "COMPOUND_ETH");
+    }
+
+    function _deployProtocol(
+        Protocol memory protocol,
+        address defaultUnderlying,
+        address defaultVault,
+        address defaultDepositor,
+        TokenYield[] memory deployedTokens,
+        uint256 startIndex
+    ) internal returns (uint256 nextIndex) {
+        console.log("=== Deploying for protocol:", protocol.name);
+
+        address protocolUnderlying = _addressWithFallback(
+            string.concat(protocol.envPrefix, "_DEFAULT_UNDERLYING"),
+            defaultUnderlying
+        );
+        address protocolVault = _addressWithFallback(
+            string.concat(protocol.envPrefix, "_DEFAULT_VAULT"),
+            defaultVault
+        );
+        address protocolDepositor = _addressWithFallback(
+            string.concat(protocol.envPrefix, "_DEFAULT_DEPOSITOR"),
+            defaultDepositor
+        );
+
+        uint256 deployedIndex = startIndex;
+        for (uint256 i = 0; i < protocol.tokens.length; i++) {
+            TokenInfo memory info = protocol.tokens[i];
+
+            address underlying = _requireUnderlying(
+                string.concat(info.envPrefix, "_UNDERLYING"),
+                protocolUnderlying
+            );
+            address vault = _addressWithFallback(
+                string.concat(info.envPrefix, "_VAULT"),
+                protocolVault
+            );
+            address depositor = _addressWithFallback(
+                string.concat(info.envPrefix, "_DEPOSITOR"),
+                protocolDepositor
+            );
+
+            deployedTokens[deployedIndex] = _deployToken(
+                info,
+                underlying,
+                vault,
+                depositor
+            );
+            deployedIndex++;
+        }
+
+        return deployedIndex;
+    }
+
+    function _deployToken(
+        TokenInfo memory info,
+        address underlying,
+        address vault,
+        address depositor
+    ) internal returns (TokenYield token) {
+        token = new TokenYield(info.name, info.symbol, underlying, vault, depositor);
+
+        console.log(
+            string.concat("Deployed ", info.name, " (", info.symbol, ") at:"),
+            address(token)
+        );
+        console.log("  Underlying:", underlying);
+        console.log("  Vault:", vault);
+        console.log("  Depositor:", depositor);
+    }
 }

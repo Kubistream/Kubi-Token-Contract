@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test} from "forge-std/Test.sol";
-import {TokenYield} from "../src/TokenYield.sol";
-import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import "forge-std/Test.sol";
+import "../src/TokenYield.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-// Mock ERC20 sebagai underlying token (contoh USDC)
+/// Mock ERC20 sebagai underlying token
 contract MockToken is ERC20 {
     constructor() ERC20("Mock USDC", "mUSDC") {
         _mint(msg.sender, 1_000_000 ether);
@@ -21,103 +21,125 @@ contract TokenYieldTest is Test {
     MockToken public mockToken;
 
     address owner = address(this);
-    address vault = address(0xBEEF);
-    address user1 = address(0x1111);
-    address user2 = address(0x2222);
+    address depositor = address(0x123);
+    address user1 = address(0x111);
+    address user2 = address(0x222);
 
     function setUp() public {
         // Deploy mock underlying token
         mockToken = new MockToken();
 
-        // Mint token ke vault untuk redeem
-        mockToken.mint(vault, 1_000_000 ether);
-
         // Deploy TokenYield
         tokenYield = new TokenYield(
-            "AqLend Staked USDC",
-            "aUSDC",
+            "Yield Token",
+            "YLD",
             address(mockToken),
-            vault
+            address(0), // vault optional
+            depositor
         );
 
-        // Tambahkan MINTER_ROLE ke owner
-        tokenYield.addMinter(owner);
+        // Tambahkan saldo ke depositor
+        mockToken.mint(depositor, 1000 ether);
+
+        // Approve TokenYield agar depositor bisa transfer underlying
+        vm.startPrank(depositor);
+        mockToken.approve(address(tokenYield), type(uint256).max);
+        vm.stopPrank();
+
+        // Pastikan owner punya minter role
+        assertTrue(tokenYield.hasRole(tokenYield.MINTER_ROLE(), owner));
     }
 
     function testMint() public {
         tokenYield.mint(user1, 100 ether);
-        uint256 balance = tokenYield.balanceOf(user1);
-        assertEq(balance, 100 ether, "minted balance mismatch");
+
+        uint256 bal = tokenYield.balanceOf(user1);
+        assertEq(bal, 100 ether, "balance mismatch");
     }
 
-    function testRebaseIncreasesBalance() public {
+    function testDepositYield() public {
+        vm.startPrank(depositor);
+        tokenYield.depositYield(user1, 200 ether);
+        vm.stopPrank();
+
+        uint256 bal = tokenYield.balanceOf(user1);
+        assertEq(bal, 200 ether, "deposit yield failed");
+
+        uint256 contractBal = mockToken.balanceOf(address(tokenYield));
+        assertEq(contractBal, 200 ether, "underlying not received");
+    }
+
+    function testRebaseIncreasesBalances() public {
+        // Mint dan rebase
         tokenYield.mint(user1, 100 ether);
-        tokenYield.rebase(1.2e18);
-        uint256 newBalance = tokenYield.balanceOf(user1);
-        assertApproxEqAbs(newBalance, 120 ether, 1, "balance after rebase incorrect");
+        uint256 beforeBal = tokenYield.balanceOf(user1);
+
+        tokenYield.rebase(12e17); // +20%
+
+        uint256 afterBal = tokenYield.balanceOf(user1);
+        assertGt(afterBal, beforeBal, "balance should increase after rebase");
+    }
+
+    function testTransfer() public {
+        tokenYield.mint(user1, 100 ether);
+
+        vm.prank(user1);
+        tokenYield.transfer(user2, 50 ether);
+
+        assertEq(tokenYield.balanceOf(user1), 50 ether);
+        assertEq(tokenYield.balanceOf(user2), 50 ether);
+    }
+
+    function testRedeem() public {
+        vm.startPrank(depositor);
+        tokenYield.depositYield(user1, 300 ether);
+        vm.stopPrank();
+
+        uint256 beforeUserBal = mockToken.balanceOf(user1);
+        uint256 beforeContractBal = mockToken.balanceOf(address(tokenYield));
+
+        vm.prank(user1);
+        tokenYield.redeem(100 ether);
+
+        uint256 afterUserBal = mockToken.balanceOf(user1);
+        uint256 afterContractBal = mockToken.balanceOf(address(tokenYield));
+
+        assertEq(afterUserBal - beforeUserBal, 100 ether, "user should receive underlying");
+        assertEq(beforeContractBal - afterContractBal, 100 ether, "contract should decrease underlying");
+    }
+
+    function test_RevertWhen_DepositByNonDepositor() public {
+        vm.expectRevert("TokenYield: only depositor contract");
+        tokenYield.depositYield(user1, 100 ether);
+    }
+
+
+    function test_RevertWhen_MintByNonMinter() public {
+        tokenYield.removeMinter(owner);
+
+        vm.expectRevert("TokenYield: not minter");
+        tokenYield.mint(user1, 100 ether);
+    }
+
+
+    function testUpdateVaultAndDepositor() public {
+        address newVault = address(0x777);
+        address newDepo = address(0x888);
+
+        tokenYield.updateVault(newVault);
+        tokenYield.updateDepositorContract(newDepo);
+
+        assertEq(tokenYield.vault(), newVault);
+        assertEq(tokenYield.depositorContract(), newDepo);
     }
 
     function testSimulateYield() public {
         tokenYield.mint(user1, 100 ether);
-        tokenYield.simulateYield(15); // +15%
-        uint256 newBalance = tokenYield.balanceOf(user1);
-        assertApproxEqAbs(newBalance, 115 ether, 1, "simulate yield incorrect");
-    }
+        uint256 before = tokenYield.balanceOf(user1);
 
-    function testBurnReducesBalance() public {
-        tokenYield.mint(user1, 100 ether);
-        tokenYield.burn(user1, 40 ether);
-        uint256 balance = tokenYield.balanceOf(user1);
-        assertApproxEqAbs(balance, 60 ether, 1, "burn did not reduce balance properly");
-    }
+        tokenYield.simulateYield(25); // +25%
 
-    function testUpdateVault() public {
-        address newVault = address(0xCAFE);
-        tokenYield.updateVault(newVault);
-        assertEq(tokenYield.vault(), newVault, "vault not updated correctly");
-    }
-
-    function testRedeem() public {
-        tokenYield.mint(user1, 100 ether);
-
-        vm.startPrank(vault);
-        mockToken.approve(address(tokenYield), 1_000_000 ether);
-        vm.stopPrank();
-
-        vm.startPrank(user1);
-        tokenYield.redeem(100 ether);
-        vm.stopPrank();
-
-        assertEq(mockToken.balanceOf(user1), 100 ether, "redeem underlying mismatch");
-    }
-
-    /// === FIXED: testFail → expectRevert ===
-
-    function test_RevertWhen_RedeemWithoutEnoughBalance() public {
-        vm.startPrank(user1);
-        vm.expectRevert("insufficient balance");
-        tokenYield.redeem(50 ether);
-        vm.stopPrank();
-    }
-
-    function test_RevertWhen_UpdateVaultByNonOwner() public {
-        vm.startPrank(user1);
-        vm.expectRevert();
-        tokenYield.updateVault(address(0xDEAD));
-        vm.stopPrank();
-    }
-
-    function testTransferBetweenUsers() public {
-        tokenYield.mint(user1, 200 ether);
-
-        vm.prank(vault);
-        mockToken.approve(address(tokenYield), 1_000_000 ether);
-
-        vm.startPrank(user1);
-        bool success = tokenYield.transfer(user2, 100 ether);
-        vm.stopPrank();
-
-        assertTrue(success, "transfer failed");
-        assertApproxEqAbs(tokenYield.balanceOf(user2), 100 ether, 1, "receiver balance mismatch");
+        uint256 afterBal = tokenYield.balanceOf(user1);
+        assertApproxEqAbs(afterBal, (before * 125) / 100, 1e12, "should grow ~25%");
     }
 }

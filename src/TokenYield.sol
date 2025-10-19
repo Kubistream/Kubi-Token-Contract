@@ -5,16 +5,18 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract TokenYield is ERC20, Ownable, AccessControl {
+    using SafeERC20 for IERC20;
+
     // ====== STORAGE ======
     mapping(address => uint256) internal _internalBalance;
     mapping(address => uint256) public userLastScaling;
     mapping(address => uint256) public userBaseBalance;
 
     IERC20 public underlyingToken; // token asli (misal USDC)
-    address public vault;              // alamat vault yang boleh narik underlying
+    address public vault;              // alamat vault (optional, tidak wajib digunakan untuk transfer)
     address public depositorContract;
 
     uint256 public scalingFactor = 1e18;
@@ -33,8 +35,6 @@ contract TokenYield is ERC20, Ownable, AccessControl {
     event VaultUpdated(address indexed oldVault, address indexed newVault);
     event DepositorContractUpdated(address indexed oldContract, address indexed newContract);
 
-
-
     // ====== CONSTRUCTOR ======
     constructor(
         string memory name,
@@ -42,7 +42,7 @@ contract TokenYield is ERC20, Ownable, AccessControl {
         address _underlyingToken,
         address _vault,
         address _depositorContract
-    ) {
+    ) ERC20(name, symbol) Ownable(msg.sender) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
 
@@ -51,7 +51,6 @@ contract TokenYield is ERC20, Ownable, AccessControl {
         depositorContract = _depositorContract;
     }
 
-
     // ====== CORE ======
     modifier onlyMinter() {
         require(hasRole(MINTER_ROLE, msg.sender), "TokenYield: not minter");
@@ -59,38 +58,40 @@ contract TokenYield is ERC20, Ownable, AccessControl {
     }
 
     modifier onlyDepositorContract() {
-    require(msg.sender == depositorContract, "TokenYield: only depositor contract");
-    _;
-}
-
+        require(msg.sender == depositorContract, "TokenYield: only depositor contract");
+        _;
+    }
 
     function mint(address to, uint256 amount) external onlyMinter {
-        require(amount > 0, "invalid amount");
+        require(amount > 0, "TokenYield: invalid amount");
         uint256 internalAmt = (amount * 1e18) / scalingFactor;
         _internalBalance[to] += internalAmt;
+
+        // update user scaling/base
         userBaseBalance[to] = _internalBalance[to];
         userLastScaling[to] = scalingFactor;
+
         emit Mint(to, amount);
     }
 
+    /// @notice Called by depositor contract to deposit underlying as yield and mint tokenYield for user
     function depositYield(address user, uint256 amount) external onlyDepositorContract {
         require(amount > 0, "TokenYield: invalid amount");
 
-        // 1️⃣ Tarik underlying token dari kontrak caller ke vault
-        bool success = underlyingToken.safeTransferFrom(msg.sender, vault, amount);
-        require(success, "TokenYield: transfer underlying failed");
+        // Transfer underlying from depositor contract (msg.sender) into THIS contract
+        // This requires the depositor contract to have approved this contract for `amount`.
+        underlyingToken.safeTransferFrom(msg.sender, address(this), amount);
 
-        // 2️⃣ Hitung jumlah internal balance berdasarkan scaling
+        // Calculate internal amount based on scaling factor
         uint256 internalAmt = (amount * 1e18) / scalingFactor;
         _internalBalance[user] += internalAmt;
 
-        // 3️⃣ Simpan scaling user saat ini
+        // Update user scaling/base
         userBaseBalance[user] = _internalBalance[user];
         userLastScaling[user] = scalingFactor;
 
         emit Mint(user, amount);
     }
-
 
     function balanceOf(address user) public view override returns (uint256) {
         return (_internalBalance[user] * scalingFactor) / 1e18;
@@ -102,7 +103,7 @@ contract TokenYield is ERC20, Ownable, AccessControl {
 
     // ====== REBASE / YIELD ======
     function rebase(uint256 newScalingFactor) external onlyOwner {
-        require(newScalingFactor > 0, "invalid scaling");
+        require(newScalingFactor > 0, "TokenYield: invalid scaling");
         uint256 oldFactor = scalingFactor;
         scalingFactor = newScalingFactor;
 
@@ -152,33 +153,40 @@ contract TokenYield is ERC20, Ownable, AccessControl {
 
     // ====== MISC ======
     function burn(address from, uint256 amount) external onlyOwner {
-        require(amount > 0, "invalid amount");
+        require(amount > 0, "TokenYield: invalid amount");
         uint256 internalAmt = (amount * 1e18) / scalingFactor;
-        require(_internalBalance[from] >= internalAmt, "insufficient");
+        require(_internalBalance[from] >= internalAmt, "TokenYield: insufficient");
         _internalBalance[from] -= internalAmt;
+
+        // update user base/scale
+        userBaseBalance[from] = _internalBalance[from];
+        userLastScaling[from] = scalingFactor;
+
         emit Burned(from, amount);
     }
 
-
     function redeem(uint256 amount) external {
-        require(amount > 0, "invalid amount");
+        require(amount > 0, "TokenYield: invalid amount");
 
         uint256 internalAmt = (amount * 1e18) / scalingFactor;
-        require(_internalBalance[msg.sender] >= internalAmt, "insufficient balance");
+        require(_internalBalance[msg.sender] >= internalAmt, "TokenYield: insufficient balance");
 
         // Burn staking token (kurangi internal balance)
         _internalBalance[msg.sender] -= internalAmt;
+
+        // update user base/scale
+        userBaseBalance[msg.sender] = _internalBalance[msg.sender];
+        userLastScaling[msg.sender] = scalingFactor;
+
         emit Burned(msg.sender, amount);
 
-        // Transfer token asli dari vault ke user
-        bool success = underlyingToken.transferFrom(vault, msg.sender, amount);
-        require(success, "transfer failed");
+        // Transfer underlying from THIS contract to user
+        underlyingToken.safeTransfer(msg.sender, amount);
 
         emit Redeemed(msg.sender, amount);
     }
 
-        /// @notice Mengganti alamat vault yang digunakan untuk redeem token
-    /// @param newVault Alamat vault baru
+    /// @notice Update vault address (if kamu pakai vault eksternal)
     function updateVault(address newVault) external onlyOwner {
         require(newVault != address(0), "TokenYield: invalid vault address");
         require(newVault != vault, "TokenYield: same vault address");
@@ -189,19 +197,16 @@ contract TokenYield is ERC20, Ownable, AccessControl {
         emit VaultUpdated(oldVault, newVault);
     }
 
-    /// @notice Mengganti alamat vault yang digunakan untuk redeem token
-    /// @param newVault Alamat vault baru
+    /// @notice Update depositorContract address
     function updateDepositorContract(address newDepositorContract) external onlyOwner {
-        require(newDepositorContract != address(0), "TokenYield: invalid vault address");
-        require(newDepositorContract != depositorContract, "TokenYield: same vault address");
+        require(newDepositorContract != address(0), "TokenYield: invalid depositor address");
+        require(newDepositorContract != depositorContract, "TokenYield: same depositor address");
 
         address oldDepositorContract = depositorContract;
         depositorContract = newDepositorContract;
 
         emit DepositorContractUpdated(oldDepositorContract, newDepositorContract);
     }
-
-
 
     // ====== ADMIN METHODS ======
     /// @notice Menambah minter baru
@@ -214,29 +219,44 @@ contract TokenYield is ERC20, Ownable, AccessControl {
         _revokeRole(MINTER_ROLE, account);
     }
 
+    // Override transfer behavior to use internal balances
     function transfer(address to, uint256 amount) public override returns (bool) {
-    uint256 internalAmt = (amount * 1e18) / scalingFactor;
-    require(_internalBalance[msg.sender] >= internalAmt, "insufficient balance");
-    require(underlyingToken.balanceOf(vault) >= amount, "vault insufficient balance");
+        uint256 internalAmt = (amount * 1e18) / scalingFactor;
+        require(_internalBalance[msg.sender] >= internalAmt, "TokenYield: insufficient balance");
+        // optional: check underlying availability if you want
+        // require(underlyingToken.balanceOf(address(this)) >= amount, "TokenYield: contract insufficient underlying");
 
-    _internalBalance[msg.sender] -= internalAmt;
-    _internalBalance[to] += internalAmt;
+        _internalBalance[msg.sender] -= internalAmt;
+        _internalBalance[to] += internalAmt;
 
-    emit Transfer(msg.sender, to, amount);
-    return true;
-}
+        // update scaling/base for both parties
+        userBaseBalance[msg.sender] = _internalBalance[msg.sender];
+        userLastScaling[msg.sender] = scalingFactor;
 
-function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
-    uint256 internalAmt = (amount * 1e18) / scalingFactor;
-    require(_internalBalance[from] >= internalAmt, "insufficient balance");
+        userBaseBalance[to] = _internalBalance[to];
+        userLastScaling[to] = scalingFactor;
 
-    _spendAllowance(from, msg.sender, amount);
+        emit Transfer(msg.sender, to, amount);
+        return true;
+    }
 
-    _internalBalance[from] -= internalAmt;
-    _internalBalance[to] += internalAmt;
+    function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
+        uint256 internalAmt = (amount * 1e18) / scalingFactor;
+        require(_internalBalance[from] >= internalAmt, "TokenYield: insufficient balance");
 
-    emit Transfer(from, to, amount);
-    return true;
-}
+        _spendAllowance(from, msg.sender, amount);
 
+        _internalBalance[from] -= internalAmt;
+        _internalBalance[to] += internalAmt;
+
+        // update scaling/base for both parties
+        userBaseBalance[from] = _internalBalance[from];
+        userLastScaling[from] = scalingFactor;
+
+        userBaseBalance[to] = _internalBalance[to];
+        userLastScaling[to] = scalingFactor;
+
+        emit Transfer(from, to, amount);
+        return true;
+    }
 }

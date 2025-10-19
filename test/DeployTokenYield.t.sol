@@ -1,62 +1,65 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test, console2} from "forge-std/Test.sol";
+import {DeployTokenYieldScript} from "../script/TokenYield.s.sol";
 import {TokenYield} from "../src/TokenYield.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-// contract DeployTokenYieldTest is Test {
-//     TokenYield public token;
+/// Mock underlying token (misalnya USDC)
+contract MockToken is ERC20 {
+    constructor() ERC20("Mock USDC", "mUSDC") {
+        _mint(msg.sender, 1_000_000 ether);
+    }
+}
 
-//     function setUp() public {
-//         // Deploy kontrak baru untuk tiap test
-//         token = new TokenYield("Wq ETH", "WqETH");
-//     }
+contract TokenYieldScriptTest is Test {
+    DeployTokenYieldScript public deployScript;
+    TokenYield public token;
+    MockToken public mockUnderlying;
 
-//     function testInitialValues() public view {
-//         // Pastikan nama dan simbol sesuai
-//         assertEq(token.name(), "Wq ETH");
-//         assertEq(token.symbol(), "WqETH");
-//     }
+    address private deployer;
+    uint256 private deployerPrivateKey;
+    address private depositor = address(0x123);
+    address private vault = address(0x456);
 
-//     function testMintAndBalance() public {
-//         address alice = address(0x1234);
+    function setUp() public {
+        // Derive broadcaster EOA from a deterministic private key for the test
+        deployerPrivateKey = uint256(uint160(address(this)));
+        deployer = vm.addr(deployerPrivateKey);
 
-//         // Mint token ke Alice
-//         token.mint(alice, 100 ether);
+        // Deploy mock underlying token
+        mockUnderlying = new MockToken();
 
-//         // Cek saldo
-//         uint256 balance = token.balanceOf(alice);
-//         console.log("Alice balance:", balance);
-//         assertEq(balance, 100 ether);
-//     }
+        // Set env variables
+        vm.setEnv("PRIVATE_KEY", vm.toString(deployerPrivateKey));
+        vm.setEnv("TOKEN_NAME", "Yield Test Token");
+        vm.setEnv("TOKEN_SYMBOL", "YTT");
+        vm.setEnv("UNDERLYING_TOKEN", vm.toString(address(mockUnderlying)));
+        vm.setEnv("VAULT_ADDRESS", vm.toString(vault));
+        vm.setEnv("DEPOSITOR_CONTRACT", vm.toString(depositor));
 
-//     function testTransfer() public {
-//         address alice = address(0x1234);
-//         address bob = address(0x5678);
+        deployScript = new DeployTokenYieldScript();
+    }
 
-//         // Pastikan kontrak ini punya izin mint
-//         token.mint(alice, 50 ether);
-//         console.log("Alice after mint:", token.balanceOf(alice));
+    function testRunDeploysTokenYield() public {
+        // Jalankan script
+        address deployed = deployScript.run();
+        token = TokenYield(deployed);
 
+        // Verifikasi hasil deployment
+        assertEq(token.name(), "Yield Test Token", "Nama token salah");
+        assertEq(token.symbol(), "YTT", "Symbol token salah");
+        assertEq(address(token.underlyingToken()), address(mockUnderlying), "Underlying salah");
+        assertEq(token.vault(), vault, "Vault salah");
+        assertEq(token.depositorContract(), depositor, "Depositor salah");
+        assertEq(token.owner(), deployer, "Owner salah");
 
-//         // Cek saldo Alice
-//         assertEq(token.balanceOf(alice), 50 ether, "Mint failed");
+        //  Periksa role
+        bytes32 minterRole = token.MINTER_ROLE();
+        assertTrue(token.hasRole(minterRole, deployer), "Deployer seharusnya minter");
 
-//         // Jalankan transfer sebagai Alice
-//         vm.prank(alice);
-//         token.transfer(bob, 20 ether);
-
-//         assertEq(token.balanceOf(bob), 20 ether);
-//         assertEq(token.balanceOf(alice), 30 ether);
-//     }
-
-
-//     function testRebaseAffectsBalances() public {
-//         address alice = address(0x1234);
-//         token.mint(alice, 100e18);
-//         token.rebase(2e18); // simulasi yield 2x
-//         assertEq(token.balanceOf(alice), 200e18);
-//     }
-
-
-// }
+        emit log_address(address(token));
+        emit log_string("TokenYield deployment via script berhasil");
+    }
+}
