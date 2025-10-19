@@ -31,6 +31,7 @@ contract TokenYield is ERC20, Ownable, AccessControl {
     event Mint(address indexed to, uint256 amount);
     event Burned(address indexed from, uint256 amount);
     event Rebased(uint256 oldFactor, uint256 newFactor, uint256 growthPercent);
+    event ScalingReset(uint256 oldFactor, uint256 newFactor);
     event Redeemed(address indexed user, uint256 amount);
     event VaultUpdated(address indexed oldVault, address indexed newVault);
     event DepositorContractUpdated(address indexed oldContract, address indexed newContract);
@@ -78,9 +79,12 @@ contract TokenYield is ERC20, Ownable, AccessControl {
     function depositYield(address user, uint256 amount) external onlyDepositorContract {
         require(amount > 0, "TokenYield: invalid amount");
 
-        // Transfer underlying from depositor contract (msg.sender) into THIS contract
-        // This requires the depositor contract to have approved this contract for `amount`.
-        underlyingToken.safeTransferFrom(msg.sender, address(this), amount);
+        // Determine where underlying should be parked: default to this contract, or an external vault when configured
+        address target = vault == address(0) ? address(this) : vault;
+
+        // Transfer underlying from depositor (msg.sender) into the target location.
+        // The depositor contract must have approved this contract to pull the tokens.
+        underlyingToken.safeTransferFrom(msg.sender, target, amount);
 
         // Calculate internal amount based on scaling factor
         uint256 internalAmt = (amount * 1e18) / scalingFactor;
@@ -131,6 +135,19 @@ contract TokenYield is ERC20, Ownable, AccessControl {
         emit Rebased(oldFactor, scalingFactor, growth);
     }
 
+    /// @notice Reset scaling factor and growth tracking back to the base state (1.0x)
+    function resetScaling() external onlyOwner {
+        uint256 oldFactor = scalingFactor;
+        require(oldFactor != 1e18 || cumulativeGrowth != 0, "TokenYield: already at base");
+
+        scalingFactor = 1e18;
+        cumulativeGrowth = 0;
+        lastScalingFactor = scalingFactor;
+        lastRebaseBlock = block.number;
+
+        emit ScalingReset(oldFactor, scalingFactor);
+    }
+
     // ====== VIEW HELPERS ======
     function currentGrowth() public view returns (uint256) {
         if (lastScalingFactor == 0) return 0;
@@ -140,11 +157,43 @@ contract TokenYield is ERC20, Ownable, AccessControl {
     function totalGrowthPercent() public view returns (uint256) {
         return cumulativeGrowth;
     }
-
+    
     function walletGrowth(address user) public view returns (uint256) {
         uint256 userScale = userLastScaling[user];
         if (userScale == 0) return 0;
-        return (scalingFactor * 1e18) / userScale - 1e18;
+        uint256 ratio = (scalingFactor * 1e18) / userScale;
+        if (ratio <= 1e18) return 0;
+        return ratio - 1e18;
+    }
+
+    /// @notice Preview the growth and cumulative growth impact for a proposed rebase
+    function previewRebase(uint256 newFactor) external view returns (uint256 growth, uint256 projectedCumulativeGrowth) {
+        require(newFactor > 0, "TokenYield: invalid scaling");
+
+        uint256 oldFactor = scalingFactor;
+        projectedCumulativeGrowth = cumulativeGrowth;
+
+        if (oldFactor > 0) {
+            uint256 ratio = (newFactor * 1e18) / oldFactor;
+            if (ratio > 1e18) {
+                growth = ratio - 1e18;
+                projectedCumulativeGrowth += growth;
+            }
+        }
+    }
+
+    /// @notice Preview the target scaling factor and growth when applying a growth value expressed in ppm (1 = 0.0001%)
+    function previewGrowth(uint256 growthPpm) external view returns (uint256 newFactor, uint256 growth, uint256 projectedCumulativeGrowth) {
+        uint256 multiplier = 1_000_000 + growthPpm; // 1e6 = 100%
+        uint256 oldFactor = scalingFactor;
+        projectedCumulativeGrowth = cumulativeGrowth;
+
+        newFactor = (oldFactor * multiplier) / 1_000_000;
+
+        if (oldFactor > 0) {
+            growth = ((newFactor * 1e18) / oldFactor) - 1e18;
+            projectedCumulativeGrowth += growth;
+        }
     }
 
     function projectedBalance(address user) public view returns (uint256) {
@@ -180,8 +229,12 @@ contract TokenYield is ERC20, Ownable, AccessControl {
 
         emit Burned(msg.sender, amount);
 
-        // Transfer underlying from THIS contract to user
-        underlyingToken.safeTransfer(msg.sender, amount);
+        // Transfer underlying from the appropriate source (contract or external vault) to the user
+        if (vault == address(0)) {
+            underlyingToken.safeTransfer(msg.sender, amount);
+        } else {
+            underlyingToken.safeTransferFrom(vault, msg.sender, amount);
+        }
 
         emit Redeemed(msg.sender, amount);
     }

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "forge-std/Test.sol";
-import "../src/TokenYield.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {Test} from "forge-std/Test.sol";
+import {TokenYield} from "../src/TokenYield.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// Mock ERC20 sebagai underlying token
 contract MockToken is ERC20 {
@@ -67,6 +67,30 @@ contract TokenYieldTest is Test {
 
         uint256 contractBal = mockToken.balanceOf(address(tokenYield));
         assertEq(contractBal, 200 ether, "underlying not received");
+    }
+
+    function testDepositYieldWithExternalVault() public {
+        address vaultUser = address(0x777);
+        tokenYield.updateVault(vaultUser);
+
+        vm.startPrank(depositor);
+        tokenYield.depositYield(user1, 150 ether);
+        vm.stopPrank();
+
+        assertEq(mockToken.balanceOf(vaultUser), 150 ether, "vault should receive underlying");
+        assertEq(mockToken.balanceOf(address(tokenYield)), 0, "contract should not retain underlying");
+
+        // Approve TokenYield to pull funds back from the vault for redemption
+        vm.prank(vaultUser);
+        mockToken.approve(address(tokenYield), type(uint256).max);
+
+        uint256 userBefore = mockToken.balanceOf(user1);
+
+        vm.prank(user1);
+        tokenYield.redeem(50 ether);
+
+        assertEq(mockToken.balanceOf(user1) - userBefore, 50 ether, "user should receive redeemed underlying");
+        assertEq(mockToken.balanceOf(vaultUser), 100 ether, "vault balance should decrease by redeemed amount");
     }
 
     function testRebaseIncreasesBalances() public {
@@ -173,6 +197,63 @@ contract TokenYieldTest is Test {
         assertEq(tokenYield.lastScalingFactor(), 1e18, "last scaling should capture previous factor");
         assertEq(tokenYield.lastRebaseBlock(), blockBefore, "simulate yield should update block");
         assertApproxEqAbs(tokenYield.balanceOf(user1), (200 ether * 112) / 100, 1, "balance should grow 12%");
+    }
+
+    function testResetScalingRestoresBaseState() public {
+        tokenYield.mint(user1, 100 ether);
+        tokenYield.rebase(15e17); // 1.5x
+        assertApproxEqAbs(tokenYield.balanceOf(user1), 150 ether, 1, "balance should scale before reset");
+
+        uint256 expectedBlock = block.number + 1;
+        vm.roll(expectedBlock);
+        tokenYield.resetScaling();
+
+        assertEq(tokenYield.scalingFactor(), 1e18, "scaling factor should reset");
+        assertEq(tokenYield.cumulativeGrowth(), 0, "cumulative growth should reset");
+        assertEq(tokenYield.currentGrowth(), 0, "current growth should reset");
+        assertEq(tokenYield.totalGrowthPercent(), 0, "total growth should reset");
+        assertEq(tokenYield.balanceOf(user1), 100 ether, "balance should return to base amount");
+        assertEq(tokenYield.lastScalingFactor(), 1e18, "last scaling factor should record base");
+        assertEq(tokenYield.lastRebaseBlock(), expectedBlock, "reset should update block number");
+    }
+
+    function testResetScalingRevertsAtBaseState() public {
+        vm.expectRevert("TokenYield: already at base");
+        tokenYield.resetScaling();
+    }
+
+    function testPreviewRebaseProjectsGrowth() public {
+        tokenYield.rebase(12e17); // 1.2x
+
+        (uint256 growth, uint256 projectedCumulative) = tokenYield.previewRebase(15e17); // 1.5x
+
+        uint256 expectedGrowth = ((15e17 * 1e18) / 12e17) - 1e18; // ~= 0.25e18
+        uint256 expectedCumulative = tokenYield.cumulativeGrowth() + expectedGrowth;
+
+        assertEq(growth, expectedGrowth, "preview growth mismatch");
+        assertEq(projectedCumulative, expectedCumulative, "preview cumulative mismatch");
+    }
+
+    function testPreviewRebaseWhenNonIncreasingFactor() public {
+        tokenYield.rebase(15e17); // growth tracked
+        uint256 existingGrowth = tokenYield.cumulativeGrowth();
+
+        (uint256 growth, uint256 projectedCumulative) = tokenYield.previewRebase(1e18); // no increase
+
+        assertEq(growth, 0, "growth should be zero when factor does not increase");
+        assertEq(projectedCumulative, existingGrowth, "cumulative growth should remain unchanged");
+    }
+
+    function testPreviewGrowthUsingPpm() public {
+        uint256 growthPpm = 186; // 0.0186%
+        (uint256 newFactor, uint256 growth, uint256 projectedCumulative) = tokenYield.previewGrowth(growthPpm);
+
+        uint256 expectedFactor = (1e18 * (1_000_000 + growthPpm)) / 1_000_000;
+        uint256 expectedGrowth = expectedFactor - 1e18;
+
+        assertEq(newFactor, expectedFactor, "ppm preview new factor mismatch");
+        assertEq(growth, expectedGrowth, "ppm preview growth mismatch");
+        assertEq(projectedCumulative, expectedGrowth, "ppm preview cumulative mismatch");
     }
 
     function testBurnReducesInternalBalance() public {
