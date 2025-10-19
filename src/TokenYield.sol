@@ -125,4 +125,29 @@ contract TokenYield is ERC20, Ownable, AccessControl {
     function removeMinter(address account) external onlyOwner {
         _revokeRole(MINTER_ROLE, account);
     }
+
+    function transfer(address to, uint256 amount) public override returns (bool) {
+    uint256 internalAmt = (amount * 1e18) / scalingFactor;
+    require(_internalBalance[msg.sender] >= internalAmt, "insufficient balance");
+
+    _internalBalance[msg.sender] -= internalAmt;
+    _internalBalance[to] += internalAmt;
+
+    emit Transfer(msg.sender, to, amount);
+    return true;
+}
+
+function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
+    uint256 internalAmt = (amount * 1e18) / scalingFactor;
+    require(_internalBalance[from] >= internalAmt, "insufficient balance");
+
+    _spendAllowance(from, msg.sender, amount);
+
+    _internalBalance[from] -= internalAmt;
+    _internalBalance[to] += internalAmt;
+
+    emit Transfer(from, to, amount);
+    return true;
+}
+
 }
