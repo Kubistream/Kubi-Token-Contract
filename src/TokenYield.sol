@@ -43,7 +43,7 @@ contract TokenYield is ERC20, Ownable, AccessControl {
         address _underlyingToken,
         address _vault,
         address _depositorContract
-    ) ERC20(name, symbol) Ownable(msg.sender) {
+    ) ERC20(name, symbol) Ownable() {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
 

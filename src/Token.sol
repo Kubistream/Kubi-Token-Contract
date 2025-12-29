@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {ERC20} from "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
-import {AccessControl}  from "@openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {AccessControl}  from "@openzeppelin/contracts/access/AccessControl.sol";
 
 
 contract Token is ERC20, Ownable, AccessControl {
@@ -11,7 +11,7 @@ contract Token is ERC20, Ownable, AccessControl {
     event Burned(address indexed from, uint256 amount);
     error Unauthorized();
 
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) Ownable(msg.sender) {
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) Ownable() {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 

@@ -6,7 +6,7 @@ libs = ["lib"]
 remappings = []
 
 [rpc_endpoints]
-base-sepolia = "${BASE_SEPOLIA_RPC_URL}"
+mantle-sepolia = "${MANTLE_RPC_URL}"
 
 [etherscan]
-base-sepolia = { key = "${ETHERSCAN_API_KEY}", url = "https://api.etherscan.io/v2/api?chainid=84532" }
+mantle-sepolia = { key = "${ETHERSCAN_API_KEY}", url = "https://api.etherscan.io/v2/api?chainid=84532" }
