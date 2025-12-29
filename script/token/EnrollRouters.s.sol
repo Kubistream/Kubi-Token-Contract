@@ -10,12 +10,8 @@ import {TokenHypERC20} from "../../src/TokenHypERC20.sol";
 /// Base Sepolia <-> Mantle Sepolia (bi-directional).
 ///
 /// Run this script ON EACH CHAIN once.
-/// It reads:
-///   TOKEN_ADDRESS_* (per chain) or TOKEN_ADDRESS (fallback)
-///   *_DOMAIN and ROUTER_* (routers are the token addresses, bytes32-cast)
-///
-/// Example:
-///   MAILBOX=... RPC_URL=... TOKEN_ADDRESS=... forge script ...
+/// It reads TOKEN_ADDRESS_<PROFILE> (or TOKEN_ADDRESS as fallback) plus *_DOMAIN and ROUTER_*.
+/// Example: MAILBOX=... RPC_URL=... TOKEN_ADDRESS_MUSDC=... forge script ...
 contract EnrollRouters is TokenProfileScript {
     using TypeCasts for address;
 

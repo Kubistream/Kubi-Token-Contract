@@ -48,14 +48,25 @@ dotenv -f .env.token forge script ...
 ```
 
 ### Token profiles (multi-token deployments)
-- `TOKEN_PROFILE` selects which profile scripts operate on (defaults to `MIDRX`).
-- Each profile overrides attributes through `TOKEN_<PROFILE>_*` keys (name, symbol, decimals, scale, total supply, workflow executor, chain addresses).
+- `TOKEN_PROFILE` selects which profile scripts operate on (defaults to `MUSDC`).
+- Each profile overrides attributes through `TOKEN_<PROFILE>_*` keys (name, symbol, decimals, scale, total supply, workflow executor, address).
 - Global defaults (`TOKEN_NAME`, `TOKEN_SYMBOL`, `TOKEN_DECIMALS`, `TOTAL_SUPPLY`, `WORKFLOW_EXECUTOR`) fill any missing keys.
 
-Examples already present:
-- `TOKEN_MIDRX_*` - Mock IDRX (18 decimals).
-- `TOKEN_MUSDC_*` - Mock USDC (6 decimals).
-- `TOKEN_MUSDT_*` - Mock USDT (6 decimals).
+Built-in profiles (set via `TOKEN_PROFILE`):
+- `MUSDC` - Mock USDC (6 decimals)
+- `MUSDT` - Mock USDT (6 decimals)
+- `MNT` - Mock Mantle (18 decimals)
+- `METH` - Mock Ethereum (18 decimals)
+- `MPUFF` - Mock Puff The Dragon (18 decimals)
+- `MAXL` - Mock Axelar (18 decimals)
+- `MSVL` - Mock Slash Vision Labs (18 decimals)
+- `MLINK` - Mock Chainlink (18 decimals)
+- `MWBTC` - Mock Wrapped BTC (8 decimals)
+- `MPENDLE` - Mock Pendle (18 decimals)
+
+Make shortcuts:
+- Single profile (defaults to `TOKEN_PROFILE`): `make deploy` (deploy + enroll on Base & Mantle).
+- Batch all profiles in `TOKEN_PROFILES`: `make deploy-all-profiles` (loops deploy + enroll per profile) or just enroll with `make enroll-all-profiles`.
 
 ### Important env notes
 - `SALT_STRING` is hashed inside the deploy script. Keeping `SALT_STRING` and constructor args identical makes deployments deterministic per mailbox.
@@ -72,69 +83,55 @@ dotenv -f .env.token forge test -vvv
 
 ---
 
-## Deploy (deterministic)
-All deployments use `script/token/DeployTokenHypERC20.s.sol:DeployTokenHypERC20`, which:
-- Reads the active `TOKEN_PROFILE`.
-- Hashes `SALT_STRING` for CREATE2.
-- Injects the mailbox + workflow executor into the constructor.
-- Deploys `MockWorkflowExecutor` when none is supplied.
-- Prints predicted and deployed addresses plus the env keys you should update.
+## Deploy (deterministic) via Makefile
+Make targets wrap `script/token/DeployTokenHypERC20.s.sol:DeployTokenHypERC20` and handle Base + Mantle:
+- Set `TOKEN_PROFILE` to one of the profiles above (defaults to `MUSDC` if omitted).
+- Ensure `.env.token` has `BASE_MAILBOX`, `MANTLE_MAILBOX`, RPC URLs, and `ETHERSCAN_API_KEY`.
 
-### Base Sepolia
+### Single profile (Base + Mantle + enroll)
 ```bash
-export TOKEN_PROFILE=MIDRX          # or MUSDC / MUSDT
-export MAILBOX=$BASE_MAILBOX        # Base mailbox address
-forge script script/token/DeployTokenHypERC20.s.sol:DeployTokenHypERC20 \
-  --rpc-url $BASE_SEPOLIA_RPC_URL \
-  --broadcast \
-  --verify \
-  --etherscan-api-key $ETHERSCAN_API_KEY \
-  -vvv
+# choose profile: MUSDC, MUSDT, MNT, METH, MPUFF, MAXL, MSVL, MLINK, MWBTC, MPENDLE
+TOKEN_PROFILE=MUSDC make deploy
 ```
 
-### Mantle Sepolia
+### Single profile (step-by-step)
 ```bash
-export TOKEN_PROFILE=MIDRX          # or MUSDC / MUSDT
-export MAILBOX=$MANTLE_MAILBOX      # Mantle mailbox address
-forge script script/token/DeployTokenHypERC20.s.sol:DeployTokenHypERC20 \
-  --rpc-url $MANTLE_SEPOLIA_RPC_URL \
-  --broadcast \
-  --verify \
-  --etherscan-api-key $ETHERSCAN_API_KEY \
-  -vvv
+TOKEN_PROFILE=MUSDC make token-hyp-deploy-base
+TOKEN_PROFILE=MUSDC make token-hyp-deploy-mantle
+TOKEN_PROFILE=MUSDC make token-hyp-enroll-all   # enroll after both deploys
 ```
 
-After each deployment, copy values into `.env.token`:
+### All profiles listed in `TOKEN_PROFILES`
+```bash
+make deploy-all-profiles      # deploy + enroll for every profile in TOKEN_PROFILES
+# or only enroll (skip deploy) if addresses are already set:
+make enroll-all-profiles
+```
+
+After each deployment, update `.env.token` with the emitted address (same for both chains), e.g.:
 ```env
-TOKEN_ADDRESS_BASE_MIDRX=0x...
-TOKEN_ADDRESS_MANTLE_MIDRX=0x...
-TOKEN_MIDRX_WORKFLOW_EXECUTOR=0x...   # only when the script deployed a mock
+TOKEN_ADDRESS_<PROFILE>=0x...
+TOKEN_<PROFILE>_WORKFLOW_EXECUTOR=0x...   # only when the script deployed a mock
 ```
 
 ---
 
 ## Enroll remote routers (required)
-Hyperlane routers must enroll their remote peers. Run the script once per chain after both deployments:
+Enrollment is included in `make deploy` / `make deploy-all-profiles`, but you can run it directly (uses `TOKEN_ADDRESS_<PROFILE>`):
+```bash
+# enroll a single profile on both chains (addresses must be in .env.token)
+TOKEN_PROFILE=MUSDC make token-hyp-enroll-all
 
-1. Ensure `.env.token` has profile-specific addresses:
-   ```env
-   TOKEN_ADDRESS_BASE_<PROFILE>=0x...
-   TOKEN_ADDRESS_MANTLE_<PROFILE>=0x...
-   ```
-2. Execute the script against each RPC:
-   ```bash
-   export TOKEN_PROFILE=MIDRX
-   for RPC in $BASE_SEPOLIA_RPC_URL $MANTLE_SEPOLIA_RPC_URL; do
-     forge script script/token/EnrollRouters.s.sol:EnrollRouters --rpc-url $RPC --broadcast -vvv
-   done
-   ```
+# enroll all profiles listed in TOKEN_PROFILES
+make enroll-all-profiles
+```
 
 ---
 
 ## Bridge test (`transferRemote`)
 Send `AMOUNT` tokens from the current chain to `DEST_DOMAIN`:
 ```bash
-export TOKEN_PROFILE=MIDRX
+export TOKEN_PROFILE=MUSDC
 export DEST_DOMAIN=5003               # Mantle Sepolia
 export RECIPIENT=0xYourDestAddress
 export AMOUNT=1000000000000000000     # 1 token (18 decimals)
@@ -156,8 +153,8 @@ When `ADDITIONAL_DATA` is non-empty the script calls `transferRemoteWithPayload`
 ## Bridge via `cast send`
 Common setup:
 ```bash
-export TOKEN_PROFILE=MIDRX
-export TOKEN_ADDRESS=$TOKEN_ADDRESS_BASE_MIDRX     # override if needed
+export TOKEN_PROFILE=MUSDC
+export TOKEN_ADDRESS=$TOKEN_ADDRESS_MUSDC          # override if needed
 export PRIVATE_KEY=0xyourpk
 export RECIPIENT=0xRecipient
 export AMOUNT=1000000000000000000
@@ -226,7 +223,7 @@ flowchart LR
 
 ### Deploy workflow token
 ```bash
-export TOKEN_PROFILE=MIDRX
+export TOKEN_PROFILE=MUSDC
 export MAILBOX=$BASE_MAILBOX
 forge script script/token/DeployTokenHypERC20.s.sol:DeployTokenHypERC20 \
   --rpc-url $BASE_SEPOLIA_RPC_URL \
@@ -245,13 +242,13 @@ forge script script/token/DeployTokenHypERC20.s.sol:deployMockWorkflowExecutor \
 
 ### Configure workflow env
 ```env
-TOKEN_MIDRX_WORKFLOW_EXECUTOR=0xYourWorkflowContract
+TOKEN_MUSDC_WORKFLOW_EXECUTOR=0xYourWorkflowContract
 USE_WORKFLOW=true
 ```
 
 ### Bridge with workflow metadata
 ```bash
-export TOKEN_PROFILE=MIDRX
+export TOKEN_PROFILE=MUSDC
 export DEST_DOMAIN=5003
 export RECIPIENT=0xYourWallet
 export AMOUNT=100000000000000000000   # 100 tokens
@@ -266,8 +263,8 @@ forge script script/token/BridgeExampleWorkflow.s.sol:BridgeExampleWorkflow \
 ### Manage workflow executors
 ```bash
 # update executor
-export TOKEN_PROFILE=MIDRX
-export TOKEN_ADDRESS=$TOKEN_ADDRESS_BASE_MIDRX
+export TOKEN_PROFILE=MUSDC
+export TOKEN_ADDRESS=$TOKEN_ADDRESS_MUSDC
 export NEW_WORKFLOW_EXECUTOR=0xNewExecutor
 forge script script/token/DeployTokenHypERC20.s.sol:updateWorkflowExecutor \
   --rpc-url $BASE_SEPOLIA_RPC_URL \
@@ -275,7 +272,7 @@ forge script script/token/DeployTokenHypERC20.s.sol:updateWorkflowExecutor \
   -vvv
 
 # check executor
-export TOKEN_PROFILE=MIDRX
+export TOKEN_PROFILE=MUSDC
 script script/token/DeployTokenHypERC20.s.sol:checkWorkflowExecutor \
   --rpc-url $BASE_SEPOLIA_RPC_URL \
   -vvv
@@ -309,9 +306,9 @@ forge test -vvv
 ---
 
 ## Troubleshooting
-- **Different addresses per chain** - expected. Different mailboxes produce different init code.
+- **Address mismatch across chains** - deployments are deterministic; if addresses differ, check `SALT_STRING`, constructor args, and `MAILBOX` per chain. Once they match, set `TOKEN_ADDRESS_<PROFILE>` once for both.
 - **Workflow not triggering** - ensure `USE_WORKFLOW=true`, `WORKFLOW_EXECUTOR` is non-zero, and metadata is prefixed with `keccak256("WORKFLOW")`. The workflow bridge helper already handles this.
-- **Router enrollment reverts** - confirm both `TOKEN_ADDRESS_BASE_<PROFILE>` and `TOKEN_ADDRESS_MANTLE_<PROFILE>` are populated (or supply global fallbacks: `TOKEN_ADDRESS_BASE`, `TOKEN_ADDRESS_MANTLE`, `TOKEN_ADDRESS`).
+- **Router enrollment reverts** - confirm `TOKEN_ADDRESS_<PROFILE>` is populated (or supply global fallback: `TOKEN_ADDRESS`).
 - **Forge ignores `.env.token`** - prefix commands with `dotenv -f .env.token` (or export variables before running `forge ...`).
 - **Mantle gas payment reverts** - set `GAS_PAYMENT=0` when the destination mailbox lacks an Interchain Gas Paymaster.
 

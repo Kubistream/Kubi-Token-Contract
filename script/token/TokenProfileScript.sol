@@ -5,7 +5,8 @@ import "forge-std/Script.sol";
 
 /// @notice Shared helper for scripts that need to work with multiple token profiles.
 abstract contract TokenProfileScript is Script {
-    string internal constant DEFAULT_PROFILE = "MIDRX";
+    // Default profile is MUSDC to match the sample env files
+    string internal constant DEFAULT_PROFILE = "MUSDC";
 
     function _activeProfile() internal view returns (string memory) {
         return vm.envOr("TOKEN_PROFILE", DEFAULT_PROFILE);
@@ -48,41 +49,15 @@ abstract contract TokenProfileScript is Script {
         return vm.envOr(key, address(0));
     }
 
-    function _profileChainAddress(string memory profile, string memory chainSuffix, string memory fallbackKey)
-        internal
-        view
-        returns (address)
-    {
-        string memory profileChainKey = string.concat("TOKEN_ADDRESS_", chainSuffix, "_", profile);
-        address fallbackValue = vm.envOr(fallbackKey, address(0));
-        address profileValue = vm.envOr(profileChainKey, fallbackValue);
-        if (profileValue != address(0)) {
-            return profileValue;
-        }
-        string memory generalProfileKey = string.concat("TOKEN_ADDRESS_", profile);
-        address generalProfileValue = vm.envOr(generalProfileKey, address(0));
-        if (generalProfileValue != address(0)) {
-            return generalProfileValue;
-        }
-        address globalAddress = vm.envOr("TOKEN_ADDRESS", address(0));
-        require(globalAddress != address(0), "TOKEN_ADDRESS missing for fallback");
-        return globalAddress;
-    }
-
     function _tokenAddressForChain(string memory profile, uint256 chainId) internal view returns (address) {
-        if (chainId == vm.envUint("BASE_SEPOLIA_DOMAIN")) {
-            return _profileChainAddress(profile, "BASE", "TOKEN_ADDRESS_BASE");
-        }
-        if (chainId == vm.envUint("MANTLE_SEPOLIA_DOMAIN")) {
-            return _profileChainAddress(profile, "MANTLE", "TOKEN_ADDRESS_MANTLE");
-        }
+        // Address is shared across chains; first try profile-specific, then global fallback.
         string memory generalProfileKey = string.concat("TOKEN_ADDRESS_", profile);
         address profileGeneral = vm.envOr(generalProfileKey, address(0));
         if (profileGeneral != address(0)) {
             return profileGeneral;
         }
         address globalAddress = vm.envOr("TOKEN_ADDRESS", address(0));
-        require(globalAddress != address(0), "TOKEN_ADDRESS missing for fallback");
+        require(globalAddress != address(0), "TOKEN_ADDRESS missing");
         return globalAddress;
     }
 }

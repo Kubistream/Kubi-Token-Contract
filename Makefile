@@ -1,7 +1,8 @@
 .PHONY: build size rpc \
 	token-hyp-deploy-base token-hyp-deploy-mantle token-hyp-deploy-all \
 	token-hyp-enroll-base token-hyp-enroll-mantle token-hyp-enroll-all \
-	deploy
+	token-hyp-deploy-profiles token-hyp-enroll-profiles \
+	deploy deploy-all-profiles enroll-all-profiles
 
 GREEN := \033[0;32m
 CYAN := \033[0;36m
@@ -19,8 +20,10 @@ else
   $(error Missing $(ENV_FILE) for target $(MAKECMDGOALS))
 endif
 
-# Defaults can be overridden per-call: TOKEN_PROFILE=MIDRX make token-hyp-deploy-base
-TOKEN_PROFILE ?= MIDRX
+# Defaults can be overridden per-call: TOKEN_PROFILE=MUSDC make token-hyp-deploy-base
+TOKEN_PROFILE ?= MUSDC
+# Expand comma-separated TOKEN_PROFILES into a space-separated list for loops
+PROFILES := $(strip $(subst ,, ,$(subst ",,$(TOKEN_PROFILES))))
 
 build:
 	@clear
@@ -87,3 +90,25 @@ token-hyp-enroll-all:
 deploy:
 	@$(MAKE) token-hyp-deploy-all
 	@$(MAKE) token-hyp-enroll-all
+
+# Batch deploy/enroll for all profiles listed in TOKEN_PROFILES
+token-hyp-deploy-profiles:
+	@echo "$(CYAN)[TOKEN] Deploying TokenHypERC20 for profiles: $(PROFILES)$(RESET)"
+	@for PROFILE in $(PROFILES); do \
+		echo "$(YELLOW)[TOKEN] ===== $$PROFILE (Base + Mantle) =====$(RESET)"; \
+		$(MAKE) --no-print-directory TOKEN_PROFILE=$$PROFILE token-hyp-deploy-all || exit $$?; \
+	done
+
+token-hyp-enroll-profiles:
+	@echo "$(CYAN)[TOKEN] Enrolling routers for profiles: $(PROFILES)$(RESET)"
+	@for PROFILE in $(PROFILES); do \
+		echo "$(YELLOW)[TOKEN] ===== $$PROFILE (Base + Mantle) =====$(RESET)"; \
+		$(MAKE) --no-print-directory TOKEN_PROFILE=$$PROFILE token-hyp-enroll-all || exit $$?; \
+	done
+
+enroll-all-profiles:
+	@$(MAKE) token-hyp-enroll-profiles
+
+deploy-all-profiles:
+	@$(MAKE) token-hyp-deploy-profiles
+	@$(MAKE) token-hyp-enroll-profiles

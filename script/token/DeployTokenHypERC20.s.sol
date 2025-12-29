@@ -122,6 +122,9 @@ contract DeployTokenHypERC20 is TokenProfileScript {
         bytes32 initCodeHash = keccak256(initCode);
         address predicted = _predict(salt, initCodeHash);
 
+        console2.log("Profile:", profile);
+        console2.log("Token (name / symbol / decimals):", cfg.name, cfg.symbol, cfg.decimals);
+        console2.log("Initial supply:", cfg.initialSupply);
         console2.log("EIP-2470 factory:", EIP2470_FACTORY);
         console2.log("Mailbox:", mailbox);
         console2.log("Workflow Executor:", workflowExecutor);
@@ -186,22 +189,11 @@ contract DeployTokenHypERC20 is TokenProfileScript {
         console2.log("Current Executor:", token.getWorkflowExecutor());
     }
 
-    function _chainLabel(uint256 chainId) internal view returns (string memory) {
-        if (chainId == vm.envUint("BASE_SEPOLIA_DOMAIN")) {
-            return "BASE";
-        }
-        if (chainId == vm.envUint("MANTLE_SEPOLIA_DOMAIN")) {
-            return "MANTLE";
-        }
-        return vm.toString(chainId);
-    }
-
     function _logProfileEnvHints(string memory profile, address tokenAddr, address workflowExecutor) internal view {
         console2.log("");
         console2.log("Environment variables to update:");
 
-        string memory chainLabel = _chainLabel(block.chainid);
-        string memory tokenEnvKey = string.concat("TOKEN_ADDRESS_", chainLabel, "_", profile);
+        string memory tokenEnvKey = string.concat("TOKEN_ADDRESS_", profile);
         console2.log(tokenEnvKey, tokenAddr);
 
         string memory executorEnvKey = _profileKey(profile, "WORKFLOW_EXECUTOR");
