@@ -22,19 +22,12 @@ contract BridgeExample is TokenProfileScript {
         uint32 destination = uint32(vm.envUint("DEST_DOMAIN"));
         address recipient = vm.envAddress("RECIPIENT");
         uint256 amount = vm.envUint("AMOUNT");
-        uint256 gasPayment = vm.envUint("GAS_PAYMENT");
-        bytes memory additionalData = vm.envOr("ADDITIONAL_DATA", bytes(""));
+        uint256 gasPayment = vm.envOr("GAS_PAYMENT", uint256(0));
 
         vm.startBroadcast(pk);
-        bytes32 msgId;
-        if (additionalData.length > 0) {
-            msgId = token.transferRemoteWithPayload{value: gasPayment}(
-                destination, recipient.addressToBytes32(), amount, additionalData
-            );
-        } else {
-            // Uses token's configured hook (can be zero => mailbox default hook).
-            msgId = token.transferRemote{value: gasPayment}(destination, recipient.addressToBytes32(), amount);
-        }
+        // Uses token's configured hook (IGP optional: pass 0 if not set)
+        bytes32 msgId =
+            token.transferRemote{value: gasPayment}(destination, recipient.addressToBytes32(), amount);
         vm.stopBroadcast();
 
         console2.logBytes32(msgId);
