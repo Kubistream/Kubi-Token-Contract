@@ -4,6 +4,8 @@
 	token-hyp-deploy-profiles token-hyp-enroll-profiles \
 	deploy deploy-all-profiles enroll-all-profiles
 
+SHELL := /bin/bash
+
 GREEN := \033[0;32m
 CYAN := \033[0;36m
 YELLOW := \033[1;33m
@@ -23,6 +25,10 @@ endif
 # Defaults can be overridden per-call: TOKEN_PROFILE=MUSDC make token-hyp-deploy-base
 TOKEN_PROFILE ?= MUSDC
 # Optional helpers to reduce nonce/gas errors during batch runs
+PYTHON := $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null)
+UPDATE_ENV ?= 1
+UPDATE_ENV_SCRIPT := scripts/update_env_token_address.py
+RECAP_FILE ?= deployments/token-addresses.txt
 CAST := $(shell command -v cast 2>/dev/null)
 DEPLOYER_ADDRESS ?= $(OWNER)
 AUTO_NONCE ?= 1
@@ -57,13 +63,13 @@ endif
 
 ifneq ($(AUTO_GAS_LIMIT),0)
   ifneq ($(CAST),)
-    BLOCK_GAS_LIMIT_BASE ?= $(shell cast block latest --rpc-url "$(BASE_SEPOLIA_RPC_URL)" --json 2>/dev/null | python -c "import json,sys; j=json.load(sys.stdin); print(int(j['gasLimit'],16))" 2>/dev/null)
-    BLOCK_GAS_LIMIT_MANTLE ?= $(shell cast block latest --rpc-url "$(MANTLE_SEPOLIA_RPC_URL)" --json 2>/dev/null | python -c "import json,sys; j=json.load(sys.stdin); print(int(j['gasLimit'],16))" 2>/dev/null)
+    BLOCK_GAS_LIMIT_BASE ?= $(shell cast block latest --rpc-url "$(BASE_SEPOLIA_RPC_URL)" --json 2>/dev/null | $(PYTHON) -c "import json,sys; j=json.load(sys.stdin); print(int(j['gasLimit'],16))" 2>/dev/null)
+    BLOCK_GAS_LIMIT_MANTLE ?= $(shell cast block latest --rpc-url "$(MANTLE_SEPOLIA_RPC_URL)" --json 2>/dev/null | $(PYTHON) -c "import json,sys; j=json.load(sys.stdin); print(int(j['gasLimit'],16))" 2>/dev/null)
     ifneq ($(BLOCK_GAS_LIMIT_BASE),)
-      GAS_LIMIT_BASE ?= $(shell python -c "print(int($(BLOCK_GAS_LIMIT_BASE) * $(GAS_LIMIT_FRACTION) // 100))" 2>/dev/null)
+      GAS_LIMIT_BASE ?= $(shell $(PYTHON) -c "print(int($(BLOCK_GAS_LIMIT_BASE) * $(GAS_LIMIT_FRACTION) // 100))" 2>/dev/null)
     endif
     ifneq ($(BLOCK_GAS_LIMIT_MANTLE),)
-      GAS_LIMIT_MANTLE ?= $(shell python -c "print(int($(BLOCK_GAS_LIMIT_MANTLE) * $(GAS_LIMIT_FRACTION) // 100))" 2>/dev/null)
+      GAS_LIMIT_MANTLE ?= $(shell $(PYTHON) -c "print(int($(BLOCK_GAS_LIMIT_MANTLE) * $(GAS_LIMIT_FRACTION) // 100))" 2>/dev/null)
     endif
     ifeq ($(BLOCK_GAS_LIMIT_BASE),)
       GAS_LIMIT_BASE ?= $(if $(GAS_LIMIT_FALLBACK_BASE),$(GAS_LIMIT_FALLBACK_BASE),$(GAS_LIMIT_FALLBACK))
@@ -102,7 +108,9 @@ rpc:
 # === TokenHypERC20 deploy (Base + Mantle) ===
 token-hyp-deploy-base:
 	@echo "$(CYAN)[TOKEN] Deploying TokenHypERC20 (Base Sepolia)...$(RESET)"
-	@TOKEN_PROFILE=$(TOKEN_PROFILE) \
+	@set -euo pipefail; \
+	OUT=$$(mktemp); \
+	TOKEN_PROFILE=$(TOKEN_PROFILE) \
 	MAILBOX=$(BASE_MAILBOX) \
 	forge script script/token/DeployTokenHypERC20.s.sol:DeployTokenHypERC20 \
 		--rpc-url "$(BASE_SEPOLIA_RPC_URL)" \
@@ -110,11 +118,17 @@ token-hyp-deploy-base:
 		--verify \
 		--etherscan-api-key "$(ETHERSCAN_API_KEY)" \
 		$(FORGE_BASE_OPTS) \
-		-vvv
+		-vvv 2>&1 | tee "$$OUT"; \
+	if [ "$(UPDATE_ENV)" != "0" ] && [ -n "$(PYTHON)" ]; then \
+		"$(PYTHON)" "$(UPDATE_ENV_SCRIPT)" "$(ENV_FILE)" "$(TOKEN_PROFILE)" "$$OUT" "$(RECAP_FILE)" "base"; \
+	fi; \
+	rm -f "$$OUT"
 
 token-hyp-deploy-mantle:
 	@echo "$(CYAN)[TOKEN] Deploying TokenHypERC20 (Mantle Sepolia)...$(RESET)"
-	@TOKEN_PROFILE=$(TOKEN_PROFILE) \
+	@set -euo pipefail; \
+	OUT=$$(mktemp); \
+	TOKEN_PROFILE=$(TOKEN_PROFILE) \
 	MAILBOX=$(MANTLE_MAILBOX) \
 	forge script script/token/DeployTokenHypERC20.s.sol:DeployTokenHypERC20 \
 		--rpc-url "$(MANTLE_SEPOLIA_RPC_URL)" \
@@ -122,7 +136,11 @@ token-hyp-deploy-mantle:
 		--verify \
 		--etherscan-api-key "$(ETHERSCAN_API_KEY)" \
 		$(FORGE_MANTLE_OPTS) \
-		-vvv
+		-vvv 2>&1 | tee "$$OUT"; \
+	if [ "$(UPDATE_ENV)" != "0" ] && [ -n "$(PYTHON)" ]; then \
+		"$(PYTHON)" "$(UPDATE_ENV_SCRIPT)" "$(ENV_FILE)" "$(TOKEN_PROFILE)" "$$OUT" "$(RECAP_FILE)" "mantle"; \
+	fi; \
+	rm -f "$$OUT"
 
 token-hyp-deploy-all:
 	@$(MAKE) token-hyp-deploy-base
