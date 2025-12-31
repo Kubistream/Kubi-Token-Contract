@@ -72,39 +72,39 @@ contract DeployMultipleTokenYieldsScript is Script {
     function _buildProtocols() internal pure returns (Protocol[] memory protocols) {
         protocols = new Protocol[](4);
 
-        protocols[0].name = "Morpho";
-        protocols[0].envPrefix = "MORPHO";
+        protocols[0].name = "Minterest";
+        protocols[0].envPrefix = "MINTEREST";
         protocols[0].tokens = new TokenInfo[](5);
-        protocols[0].tokens[0] = TokenInfo("Morpho Staked USDC", "moUSDC", "MORPHO_USDC");
-        protocols[0].tokens[1] = TokenInfo("Morpho Staked USDT", "moUSDT", "MORPHO_USDT");
-        protocols[0].tokens[2] = TokenInfo("Morpho Staked IDRX", "moIDRX", "MORPHO_IDRX");
-        protocols[0].tokens[3] = TokenInfo("Morpho Staked BTC", "moBTC", "MORPHO_BTC");
-        protocols[0].tokens[4] = TokenInfo("Morpho Staked ETH", "moETH", "MORPHO_ETH");
+        protocols[0].tokens[0] = TokenInfo("Minterest Staked USDC", "miUSDC", "MINTEREST_USDC");
+        protocols[0].tokens[1] = TokenInfo("Minterest Staked USDT", "miUSDT", "MINTEREST_USDT");
+        protocols[0].tokens[2] = TokenInfo("Minterest Staked MNT", "miMNT", "MINTEREST_MNT");
+        protocols[0].tokens[3] = TokenInfo("Minterest Staked BTC", "miBTC", "MINTEREST_BTC");
+        protocols[0].tokens[4] = TokenInfo("Minterest Staked ETH", "miETH", "MINTEREST_ETH");
 
-        protocols[1].name = "Aero";
-        protocols[1].envPrefix = "AERO";
+        protocols[1].name = "Lendle";
+        protocols[1].envPrefix = "LENDLE";
         protocols[1].tokens = new TokenInfo[](5);
-        protocols[1].tokens[0] = TokenInfo("Aero Staked USDC", "aeUSDC", "AERO_USDC");
-        protocols[1].tokens[1] = TokenInfo("Aero Staked USDT", "aeUSDT", "AERO_USDT");
-        protocols[1].tokens[2] = TokenInfo("Aero Staked IDRX", "aeIDRX", "AERO_IDRX");
-        protocols[1].tokens[3] = TokenInfo("Aero Staked BTC", "aeBTC", "AERO_BTC");
-        protocols[1].tokens[4] = TokenInfo("Aero Staked ETH", "aeETH", "AERO_ETH");
+        protocols[1].tokens[0] = TokenInfo("Lendle Staked USDC", "leUSDC", "LENDLE_USDC");
+        protocols[1].tokens[1] = TokenInfo("Lendle Staked USDT", "leUSDT", "LENDLE_USDT");
+        protocols[1].tokens[2] = TokenInfo("Lendle Staked MNT", "leMNT", "LENDLE_MNT");
+        protocols[1].tokens[3] = TokenInfo("Lendle Staked BTC", "leBTC", "LENDLE_BTC");
+        protocols[1].tokens[4] = TokenInfo("Lendle Staked ETH", "leETH", "LENDLE_ETH");
 
-        protocols[2].name = "Aave";
-        protocols[2].envPrefix = "AAVE";
+        protocols[2].name = "INIT Capital";
+        protocols[2].envPrefix = "INIT_CAPITAL";
         protocols[2].tokens = new TokenInfo[](5);
-        protocols[2].tokens[0] = TokenInfo("Aave Staked USDC", "aaUSDC", "AAVE_USDC");
-        protocols[2].tokens[1] = TokenInfo("Aave Staked USDT", "aaUSDT", "AAVE_USDT");
-        protocols[2].tokens[2] = TokenInfo("Aave Staked IDRX", "aaIDRX", "AAVE_IDRX");
-        protocols[2].tokens[3] = TokenInfo("Aave Staked BTC", "aaBTC", "AAVE_BTC");
-        protocols[2].tokens[4] = TokenInfo("Aave Staked ETH", "aaETH", "AAVE_ETH");
+        protocols[2].tokens[0] = TokenInfo("INIT Capital Staked USDC", "icUSDC", "INIT_CAPITAL_USDC");
+        protocols[2].tokens[1] = TokenInfo("INIT Capital Staked USDT", "icUSDT", "INIT_CAPITAL_USDT");
+        protocols[2].tokens[2] = TokenInfo("INIT Capital Staked MNT", "icMNT", "INIT_CAPITAL_MNT");
+        protocols[2].tokens[3] = TokenInfo("INIT Capital Staked BTC", "icBTC", "INIT_CAPITAL_BTC");
+        protocols[2].tokens[4] = TokenInfo("INIT Capital Staked ETH", "icETH", "INIT_CAPITAL_ETH");
 
         protocols[3].name = "Compound";
         protocols[3].envPrefix = "COMPOUND";
         protocols[3].tokens = new TokenInfo[](5);
         protocols[3].tokens[0] = TokenInfo("Compound Staked USDC", "coUSDC", "COMPOUND_USDC");
         protocols[3].tokens[1] = TokenInfo("Compound Staked USDT", "coUSDT", "COMPOUND_USDT");
-        protocols[3].tokens[2] = TokenInfo("Compound Staked IDRX", "coIDRX", "COMPOUND_IDRX");
+        protocols[3].tokens[2] = TokenInfo("Compound Staked MNT", "coMNT", "COMPOUND_MNT");
         protocols[3].tokens[3] = TokenInfo("Compound Staked BTC", "coBTC", "COMPOUND_BTC");
         protocols[3].tokens[4] = TokenInfo("Compound Staked ETH", "coETH", "COMPOUND_ETH");
     }
