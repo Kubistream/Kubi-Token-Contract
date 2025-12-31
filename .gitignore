@@ -16,3 +16,4 @@ lib/
 # Dotenv file
 .env
 .env.token
+.env.hyperlanetokens
